@@ -29,7 +29,13 @@ func SetUpDatabase() (*Database, error) {
 		return nil, err
 	}
 
-	return &Database{DB: db}, nil
+	ddb := &Database{DB: db}
+
+	if err := setUpStartData(ddb); err != nil {
+		return nil, err
+	}
+
+	return ddb, nil
 
 }
 
@@ -55,15 +61,18 @@ func createSchema(db *sql.DB) error {
 	return nil
 }
 
-func setUpStartData(db *sql.DB) error {
-	writer1 := &Writer{
-		Name: "Edgar Allan Poe",
+func setUpStartData(db *Database) error {
+	writer1, err := db.insertWriter("Edgar Allan Poe")
+	if err != nil {
+		return err
 	}
-	writer2 := &Writer{
-		Name: "Howard Phillips Lovecraft",
+	writer2, err := db.insertWriter("Howard Phillips Lovecraft")
+	if err != nil {
+		return err
 	}
-	writer3 := &Writer{
-		Name: "Fyodor Dostoevsky",
+	writer3, err := db.insertWriter("Fyodor Dostoevsky")
+	if err != nil {
+		return err
 	}
 
 	books := []Book{
@@ -104,4 +113,62 @@ func setUpStartData(db *sql.DB) error {
 			Author: writer3,
 		},
 	}
+
+	for _, book := range books {
+		if _, err := db.insertBook(book.Name, book.Author); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (db *Database) insertWriter(name string) (*Writer, error) {
+	rows, err := db.Query("SELECT id FROM writers WHERE name = $1", name)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var ID int32
+	for rows.Next() {
+		rows.Scan(&ID)
+	}
+
+	if ID > 0 {
+		return &Writer{ID: ID, Name: name}, nil
+	}
+
+	row := db.QueryRow("INSERT INTO writers (name) VALUES ($1) RETURNING id", name)
+
+	if err := row.Scan(&ID); err != nil {
+		return nil, err
+	}
+
+	return &Writer{ID: ID, Name: name}, nil
+}
+
+func (db *Database) insertBook(name string, writer *Writer) (*Book, error) {
+	rows, err := db.Query("SELECT id FROM books WHERE name = $1 AND author = $2", name, writer.ID)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var ID int32
+	for rows.Next() {
+		rows.Scan(&ID)
+	}
+
+	if ID > 0 {
+		return &Book{ID: ID, Name: name, Author: writer}, nil
+	}
+
+	row := db.QueryRow("INSERT INTO books (name, author) VALUES ($1, $2) RETURNING id", name, writer.ID)
+
+	if err := row.Scan(&ID); err != nil {
+		return nil, err
+	}
+
+	return &Book{ID: ID, Name: name, Author: writer}, nil
 }
