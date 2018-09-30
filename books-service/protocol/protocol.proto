@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package protocol;
+
+message Writer {
+    int32 ID = 1;
+    string Name = 2;
+}
+
+message Book {
+    int32 ID = 1;
+    string Name = 2;
+    Writer Author = 3;
+}
+
+message Nothing {
+    bool dummy = 1;
+}
+
+message WriterBookName {
+    string Writer = 1;
+    string Name = 2;
+}
+
+service Books {
+    rpc Authors (Nothing) returns (stream Writer) {}
+    rpc BookByAuthorAndName (WriterBookName) returns (Book) {}
+}

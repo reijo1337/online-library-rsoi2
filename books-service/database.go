@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 
 	_ "github.com/lib/pq"
@@ -171,4 +172,60 @@ func (db *Database) insertBook(name string, writer *Writer) (*Book, error) {
 	}
 
 	return &Book{ID: ID, Name: name, Author: writer}, nil
+}
+
+func (db *Database) getAllAuthors() ([]Writer, error) {
+	resultWriters := []Writer{}
+	rows, err := db.Query("SELECT * FROM positions ORDER BY time DESC")
+
+	if err != nil {
+		return nil, err
+	}
+
+	currentWriterInRows := Writer{}
+	for rows.Next() {
+		rows.Scan(&currentWriterInRows.ID, &currentWriterInRows.Name)
+
+		resultWriters = append(resultWriters, currentWriterInRows)
+	}
+
+	return resultWriters, nil
+}
+
+func (db *Database) getBookByNameAndAuthor(name string, author string) (*Book, error) {
+	rows, err := db.Query("SELECT id FROM writers WHERE name = $1", author)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var ID int32
+	for rows.Next() {
+		rows.Scan(&ID)
+	}
+
+	if ID == 0 {
+		return nil, errors.New("There is no writer named " + author)
+	}
+
+	returnWriter := &Writer{ID: ID, Name: author}
+
+	rows, err = db.Query("SELECT id FROM books WHERE name = $1 AND author = $2", name, ID)
+
+	if err != nil {
+		return nil, err
+	}
+
+	ID = 0
+	for rows.Next() {
+		rows.Scan(&ID)
+	}
+
+	returnBook := &Book{ID: ID, Name: name, Author: returnWriter}
+
+	if ID > 0 {
+		return returnBook, nil
+	}
+
+	return nil, nil
 }
