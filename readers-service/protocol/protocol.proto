@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package protocol;
+
+message Reader {
+    int32 ID = 1;
+    string Name = 2;
+}
+
+message ReaderName {
+    string Name = 1;
+}
+
+message Nothing {
+    bool dummy = 1;
+}
+
+service Readers {
+    rpc RegisterReader (ReaderName) returns (Reader) {}
+    rpc GetReadersList (Nothing) returns (stream Reader) {}
+}

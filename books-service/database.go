@@ -174,15 +174,15 @@ func (db *Database) insertBook(name string, writer *Writer) (*Book, error) {
 	return &Book{ID: ID, Name: name, Author: writer}, nil
 }
 
-func (db *Database) getAllAuthors() ([]Writer, error) {
-	resultWriters := []Writer{}
+func (db *Database) getAllAuthors() ([]*Writer, error) {
+	resultWriters := make([]*Writer, 0)
 	rows, err := db.Query("SELECT * FROM positions ORDER BY time DESC")
 
 	if err != nil {
 		return nil, err
 	}
 
-	currentWriterInRows := Writer{}
+	currentWriterInRows := &Writer{}
 	for rows.Next() {
 		rows.Scan(&currentWriterInRows.ID, &currentWriterInRows.Name)
 
