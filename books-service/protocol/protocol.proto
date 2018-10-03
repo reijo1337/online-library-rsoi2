@@ -22,7 +22,17 @@ message WriterBookName {
     string Name = 2;
 }
 
+message BookInsert {
+    string BookName = 1;
+    string AuthorName = 2;
+}
+
+message SomeID {
+    int32 ID = 1;
+}
+
 service Books {
     rpc Authors (Nothing) returns (stream Writer) {}
     rpc BookByAuthorAndName (WriterBookName) returns (Book) {}
+    rpc AddBook(BookInsert) returns (SomeID) {}
 }

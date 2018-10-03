@@ -229,3 +229,13 @@ func (db *Database) getBookByNameAndAuthor(name string, author string) (*Book, e
 
 	return nil, nil
 }
+
+func (db *Database) insertNewBook(bookName string, authorName string) (*Book, error) {
+	author, err := db.insertWriter(authorName)
+	if err != nil {
+		return nil, err
+	}
+
+	book, err := db.insertBook(bookName, author)
+	return book, err
+}

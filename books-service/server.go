@@ -10,6 +10,7 @@ type BooksServer struct {
 	db *Database
 }
 
+// Server возвращает новый объект BookServer, который представляет определения для grpc
 func Server() (*BooksServer, error) {
 	db, err := SetUpDatabase()
 	if err != nil {
@@ -18,6 +19,7 @@ func Server() (*BooksServer, error) {
 	return &BooksServer{db: db}, nil
 }
 
+// Authors возвращает отправляет список авторов, чьи книги есть в библиотеке
 func (s *BooksServer) Authors(in *protocol.Nothing, p protocol.Books_AuthorsServer) error {
 	writers, err := s.writersList()
 	if err != nil {
@@ -31,6 +33,7 @@ func (s *BooksServer) Authors(in *protocol.Nothing, p protocol.Books_AuthorsServ
 	return nil
 }
 
+// BookByAuthorAndName возвращает книгу с определенным названием, определенного автора
 func (s *BooksServer) BookByAuthorAndName(ctx context.Context, req *protocol.WriterBookName) (*protocol.Book, error) {
 	book, err := s.db.getBookByNameAndAuthor(req.GetName(), req.GetWriter())
 	if err != nil {
@@ -51,4 +54,15 @@ func (s *BooksServer) writersList() ([]*protocol.Writer, error) {
 	}
 
 	return ret, nil
+}
+
+// Добавление новой книги в библиотеку
+func (s *BooksServer) AddBook(ctx context.Context, bookInfo *protocol.BookInsert) (*protocol.SomeID, error) {
+	newBookID, err := s.db.insertNewBook(bookInfo.BookName, bookInfo.AuthorName)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &protocol.SomeID{ID: newBookID.ID}, nil
 }
