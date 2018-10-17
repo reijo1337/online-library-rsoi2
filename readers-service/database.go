@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 )
 
@@ -90,4 +91,42 @@ func (db *Database) getReadersList() ([]*Reader, error) {
 	}
 
 	return resultWriters, nil
+}
+
+func (db *Database) getReaderByName(name string) (*Reader, error) {
+	rows, err := db.Query("SELECT id FROM readers WHERE name = $1", name)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var ID int32
+	for rows.Next() {
+		rows.Scan(&ID)
+	}
+
+	if ID > 0 {
+		return &Reader{ID: ID, Name: name}, nil
+	} else {
+		return nil, errors.New("No such reader")
+	}
+}
+
+func (db *Database) getReaderByID(ID int32) (*Reader, error) {
+	rows, err := db.Query("SELECT name FROM readers WHERE id = $1", ID)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var name string
+	for rows.Next() {
+		rows.Scan(&name)
+	}
+
+	if name != "" {
+		return &Reader{ID: ID, Name: name}, nil
+	} else {
+		return nil, errors.New("No such reader")
+	}
 }

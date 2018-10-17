@@ -15,7 +15,13 @@ message Nothing {
     bool dummy = 1;
 }
 
+message ReaderID {
+    int32 ID = 1;
+}
+
 service Readers {
     rpc RegisterReader (ReaderName) returns (Reader) {}
     rpc GetReadersList (Nothing) returns (stream Reader) {}
+    rpc GetReaderByName (ReaderName) returns (Reader) {}
+    rpc GetReaderByID (ReaderID) returns (Reader) {} 
 }

@@ -148,28 +148,70 @@ func (m *Nothing) GetDummy() bool {
 	return false
 }
 
+type ReaderID struct {
+	ID                   int32    `protobuf:"varint,1,opt,name=ID,proto3" json:"ID,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *ReaderID) Reset()         { *m = ReaderID{} }
+func (m *ReaderID) String() string { return proto.CompactTextString(m) }
+func (*ReaderID) ProtoMessage()    {}
+func (*ReaderID) Descriptor() ([]byte, []int) {
+	return fileDescriptor_2bc2336598a3f7e0, []int{3}
+}
+
+func (m *ReaderID) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ReaderID.Unmarshal(m, b)
+}
+func (m *ReaderID) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ReaderID.Marshal(b, m, deterministic)
+}
+func (m *ReaderID) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ReaderID.Merge(m, src)
+}
+func (m *ReaderID) XXX_Size() int {
+	return xxx_messageInfo_ReaderID.Size(m)
+}
+func (m *ReaderID) XXX_DiscardUnknown() {
+	xxx_messageInfo_ReaderID.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ReaderID proto.InternalMessageInfo
+
+func (m *ReaderID) GetID() int32 {
+	if m != nil {
+		return m.ID
+	}
+	return 0
+}
+
 func init() {
 	proto.RegisterType((*Reader)(nil), "protocol.Reader")
 	proto.RegisterType((*ReaderName)(nil), "protocol.ReaderName")
 	proto.RegisterType((*Nothing)(nil), "protocol.Nothing")
+	proto.RegisterType((*ReaderID)(nil), "protocol.ReaderID")
 }
 
 func init() { proto.RegisterFile("protocol.proto", fileDescriptor_2bc2336598a3f7e0) }
 
 var fileDescriptor_2bc2336598a3f7e0 = []byte{
-	// 184 bytes of a gzipped FileDescriptorProto
+	// 221 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xe2, 0x2b, 0x28, 0xca, 0x2f,
 	0xc9, 0x4f, 0xce, 0xcf, 0xd1, 0x03, 0x33, 0x84, 0x38, 0x60, 0x7c, 0x25, 0x1d, 0x2e, 0xb6, 0xa0,
 	0xd4, 0xc4, 0x94, 0xd4, 0x22, 0x21, 0x3e, 0x2e, 0x26, 0x4f, 0x17, 0x09, 0x46, 0x05, 0x46, 0x0d,
 	0xd6, 0x20, 0x26, 0x4f, 0x17, 0x21, 0x21, 0x2e, 0x16, 0xbf, 0xc4, 0xdc, 0x54, 0x09, 0x26, 0x05,
 	0x46, 0x0d, 0xce, 0x20, 0x30, 0x5b, 0x49, 0x81, 0x8b, 0x0b, 0xa2, 0x1a, 0xc4, 0x83, 0xab, 0x60,
 	0x44, 0x52, 0x21, 0xcf, 0xc5, 0xee, 0x97, 0x5f, 0x92, 0x91, 0x99, 0x97, 0x2e, 0x24, 0xc2, 0xc5,
-	0x9a, 0x52, 0x9a, 0x9b, 0x5b, 0x09, 0x96, 0xe7, 0x08, 0x82, 0x70, 0x8c, 0x1a, 0x18, 0xb9, 0xd8,
-	0x21, 0x66, 0x14, 0x0b, 0x59, 0x71, 0xf1, 0x05, 0xa5, 0xa6, 0x67, 0x16, 0x97, 0xa4, 0x16, 0x41,
-	0x1d, 0x21, 0xa2, 0x07, 0x77, 0x29, 0xc2, 0x22, 0x29, 0x01, 0x74, 0x51, 0x25, 0x06, 0x21, 0x4b,
-	0x2e, 0x3e, 0xf7, 0xd4, 0x12, 0xa8, 0x49, 0x3e, 0x99, 0xc5, 0x25, 0x42, 0x82, 0x08, 0x55, 0x50,
-	0x27, 0x60, 0xd3, 0x68, 0xc0, 0x98, 0xc4, 0x06, 0x16, 0x34, 0x06, 0x04, 0x00, 0x00, 0xff, 0xff,
-	0xa4, 0xb8, 0x67, 0xb5, 0x16, 0x01, 0x00, 0x00,
+	0x9a, 0x52, 0x9a, 0x9b, 0x5b, 0x09, 0x96, 0xe7, 0x08, 0x82, 0x70, 0x94, 0xa4, 0xb8, 0x38, 0x20,
+	0x46, 0x78, 0xba, 0xa0, 0x5b, 0x69, 0xf4, 0x8d, 0x91, 0x8b, 0x1d, 0x22, 0x59, 0x2c, 0x64, 0xc5,
+	0xc5, 0x17, 0x94, 0x9a, 0x9e, 0x59, 0x5c, 0x92, 0x5a, 0x04, 0x75, 0xa0, 0x88, 0x1e, 0xdc, 0x17,
+	0x08, 0x47, 0x48, 0x09, 0xa0, 0x8b, 0x2a, 0x31, 0x08, 0x59, 0x72, 0xf1, 0xb9, 0xa7, 0x96, 0x40,
+	0x4d, 0xf2, 0xc9, 0x2c, 0x2e, 0x11, 0x12, 0x44, 0xa8, 0x82, 0x3a, 0x0f, 0x9b, 0x46, 0x03, 0x46,
+	0x21, 0x6b, 0x2e, 0x7e, 0xb8, 0x56, 0xa7, 0x4a, 0xb0, 0x37, 0x89, 0xb7, 0xd7, 0x9c, 0x8b, 0x17,
+	0x49, 0x33, 0x28, 0x0c, 0xd1, 0x15, 0x79, 0xba, 0x60, 0xd3, 0x98, 0xc4, 0x06, 0x16, 0x32, 0x06,
+	0x04, 0x00, 0x00, 0xff, 0xff, 0xac, 0x86, 0x09, 0x36, 0xa8, 0x01, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -186,6 +228,8 @@ const _ = grpc.SupportPackageIsVersion4
 type ReadersClient interface {
 	RegisterReader(ctx context.Context, in *ReaderName, opts ...grpc.CallOption) (*Reader, error)
 	GetReadersList(ctx context.Context, in *Nothing, opts ...grpc.CallOption) (Readers_GetReadersListClient, error)
+	GetReaderByName(ctx context.Context, in *ReaderName, opts ...grpc.CallOption) (*Reader, error)
+	GetReaderByID(ctx context.Context, in *ReaderID, opts ...grpc.CallOption) (*Reader, error)
 }
 
 type readersClient struct {
@@ -237,10 +281,30 @@ func (x *readersGetReadersListClient) Recv() (*Reader, error) {
 	return m, nil
 }
 
+func (c *readersClient) GetReaderByName(ctx context.Context, in *ReaderName, opts ...grpc.CallOption) (*Reader, error) {
+	out := new(Reader)
+	err := c.cc.Invoke(ctx, "/protocol.Readers/GetReaderByName", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *readersClient) GetReaderByID(ctx context.Context, in *ReaderID, opts ...grpc.CallOption) (*Reader, error) {
+	out := new(Reader)
+	err := c.cc.Invoke(ctx, "/protocol.Readers/GetReaderByID", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ReadersServer is the server API for Readers service.
 type ReadersServer interface {
 	RegisterReader(context.Context, *ReaderName) (*Reader, error)
 	GetReadersList(*Nothing, Readers_GetReadersListServer) error
+	GetReaderByName(context.Context, *ReaderName) (*Reader, error)
+	GetReaderByID(context.Context, *ReaderID) (*Reader, error)
 }
 
 func RegisterReadersServer(s *grpc.Server, srv ReadersServer) {
@@ -286,6 +350,42 @@ func (x *readersGetReadersListServer) Send(m *Reader) error {
 	return x.ServerStream.SendMsg(m)
 }
 
+func _Readers_GetReaderByName_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ReaderName)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ReadersServer).GetReaderByName(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/protocol.Readers/GetReaderByName",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ReadersServer).GetReaderByName(ctx, req.(*ReaderName))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Readers_GetReaderByID_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ReaderID)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ReadersServer).GetReaderByID(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/protocol.Readers/GetReaderByID",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ReadersServer).GetReaderByID(ctx, req.(*ReaderID))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _Readers_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "protocol.Readers",
 	HandlerType: (*ReadersServer)(nil),
@@ -293,6 +393,14 @@ var _Readers_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RegisterReader",
 			Handler:    _Readers_RegisterReader_Handler,
+		},
+		{
+			MethodName: "GetReaderByName",
+			Handler:    _Readers_GetReaderByName_Handler,
+		},
+		{
+			MethodName: "GetReaderByID",
+			Handler:    _Readers_GetReaderByID_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

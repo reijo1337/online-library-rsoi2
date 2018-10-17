@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package protocol;
+
+message Arrear {
+    int32 ID = 1;
+    int32 ReaderID = 2;
+    int32 BookID = 3;
+    string Start = 4;
+    string End = 5;
+}
+
+message PagingArrears {
+    int32 ID = 1;
+    int32 Size = 2;
+    int32 Page = 3;
+}
+
+service Arrears {
+    rpc GetPagedReadersArrears (PagingArrears) returns (stream Arrear) {}
+}

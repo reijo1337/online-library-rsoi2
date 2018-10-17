@@ -54,3 +54,19 @@ func (s *ReadersServer) readerList() ([]*protocol.Reader, error) {
 
 	return ret, nil
 }
+
+func (s *ReadersServer) GetReaderByName(ctx context.Context, user *protocol.ReaderName) (*protocol.Reader, error) {
+	reader, err := s.db.getReaderByName(user.GetName())
+	if err != nil {
+		return nil, err
+	}
+	return &protocol.Reader{ID: reader.ID, Name: reader.Name}, nil
+}
+
+func (s *ReadersServer) GetReaderByID(ctx context.Context, user *protocol.ReaderID) (*protocol.Reader, error) {
+	reader, err := s.db.getReaderByID(user.GetID())
+	if err != nil {
+		return nil, err
+	}
+	return &protocol.Reader{ID: reader.ID, Name: reader.Name}, nil
+}
