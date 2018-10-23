@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
 
@@ -18,10 +19,13 @@ type ReadersPart struct {
 func NewReadersPart() (*ReadersPart, error) {
 	addr := os.Getenv("READERSADDR")
 	if addr == "" {
-		addr = "0.0.0.0"
+		addr = "127.0.0.1"
 	}
 
-	grpcConn, err := grpc.Dial(addr + ":8082")
+	grpcConn, err := grpc.Dial(
+		addr+":8082",
+		grpc.WithInsecure(),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -36,7 +40,7 @@ func NewReadersPart() (*ReadersPart, error) {
 func (rp *ReadersPart) getAllReaders() ([]Reader, error) {
 	ctx := context.Background()
 
-	nothing := &protocol.Nothing{Dummy: true}
+	nothing := &protocol.NothingReaders{Dummy: true}
 
 	readersServer, err := rp.readers.GetReadersList(ctx, nothing)
 	if err != nil {
@@ -47,16 +51,16 @@ func (rp *ReadersPart) getAllReaders() ([]Reader, error) {
 
 	for {
 		recvReader, err := readersServer.Recv()
-		readers = append(readers,
-			Reader{
-				ID:   recvReader.GetID(),
-				Name: recvReader.GetName(),
-			})
 		if err == io.EOF {
 			return readers, nil
 		} else if err != nil {
 			return nil, err
 		}
+		readers = append(readers,
+			Reader{
+				ID:   recvReader.GetID(),
+				Name: recvReader.GetName(),
+			})
 	}
 }
 
@@ -68,6 +72,7 @@ func (rp *ReadersPart) getReaderByName(name string) (Reader, error) {
 	reader, err := rp.readers.GetReaderByName(ctx, getReaderRequest)
 
 	if err != nil {
+		fmt.Println(err.Error())
 		return Reader{}, err
 	}
 

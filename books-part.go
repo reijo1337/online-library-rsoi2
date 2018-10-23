@@ -19,7 +19,10 @@ func NewBooksPart() (*BooksPart, error) {
 		addr = "0.0.0.0"
 	}
 
-	grpcConn, err := grpc.Dial(addr + ":8081")
+	grpcConn, err := grpc.Dial(
+		addr+":8081",
+		grpc.WithInsecure(),
+	)
 
 	if err != nil {
 		return nil, err

@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+	"io"
 	"os"
 
 	"github.com/reijo1337/online-library-rsoi2/arrears-service/protocol"
@@ -18,7 +20,10 @@ func NewArrearsPart() (*ArrearsPart, error) {
 		addr = "0.0.0.0"
 	}
 
-	grpcConn, err := grpc.Dial(addr + ":8083")
+	grpcConn, err := grpc.Dial(
+		addr+":8083",
+		grpc.WithInsecure(),
+	)
 
 	if err != nil {
 		return nil, err
@@ -29,4 +34,36 @@ func NewArrearsPart() (*ArrearsPart, error) {
 		conn:    grpcConn,
 		arrears: arrears,
 	}, nil
+}
+
+func (ap *ArrearsPart) getArrearsPaging(userID int32, page int32, size int32) ([]Arrear, error) {
+	ctx := context.Background()
+	in := &protocol.PagingArrears{
+		ID:   userID,
+		Page: page,
+		Size: size,
+	}
+	arrearsServ, err := ap.arrears.GetPagedReadersArrears(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+
+	var arrears []Arrear
+
+	for {
+		recvArrear, err := arrearsServ.Recv()
+		if err == io.EOF {
+			return arrears, nil
+		} else if err != nil {
+			return nil, err
+		}
+		arrears = append(arrears,
+			Arrear{
+				ID:       recvArrear.GetID(),
+				readerID: recvArrear.GetReaderID(),
+				bookID:   recvArrear.GetBookID(),
+				start:    recvArrear.GetStart(),
+				end:      recvArrear.GetEnd(),
+			})
+	}
 }

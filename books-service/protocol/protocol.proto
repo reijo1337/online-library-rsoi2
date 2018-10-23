@@ -13,7 +13,7 @@ message Book {
     Writer Author = 3;
 }
 
-message Nothing {
+message NothingBooks {
     bool dummy = 1;
 }
 
@@ -32,7 +32,7 @@ message SomeID {
 }
 
 service Books {
-    rpc Authors (Nothing) returns (stream Writer) {}
+    rpc Authors (NothingBooks) returns (stream Writer) {}
     rpc BookByAuthorAndName (WriterBookName) returns (Book) {}
     rpc AddBook(BookInsert) returns (SomeID) {}
 }

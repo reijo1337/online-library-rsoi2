@@ -11,7 +11,7 @@ message ReaderName {
     string Name = 1;
 }
 
-message Nothing {
+message NothingReaders {
     bool dummy = 1;
 }
 
@@ -21,7 +21,7 @@ message ReaderID {
 
 service Readers {
     rpc RegisterReader (ReaderName) returns (Reader) {}
-    rpc GetReadersList (Nothing) returns (stream Reader) {}
+    rpc GetReadersList (NothingReaders) returns (stream Reader) {}
     rpc GetReaderByName (ReaderName) returns (Reader) {}
     rpc GetReaderByID (ReaderID) returns (Reader) {} 
 }

@@ -26,7 +26,7 @@ func (s *ReadersServer) RegisterReader(ctx context.Context, user *protocol.Reade
 	return &protocol.Reader{ID: reader.ID, Name: reader.Name}, nil
 }
 
-func (s *ReadersServer) GetReadersList(in *protocol.Nothing, p protocol.Readers_GetReadersListServer) error {
+func (s *ReadersServer) GetReadersList(in *protocol.NothingReaders, p protocol.Readers_GetReadersListServer) error {
 	readers, err := s.readerList()
 	if err != nil {
 		return err

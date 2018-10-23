@@ -3,6 +3,8 @@ package main
 import (
 	"database/sql"
 	"fmt"
+
+	_ "github.com/lib/pq"
 )
 
 const (
@@ -43,8 +45,8 @@ func createSchema(db *sql.DB) error {
 			id SERIAL NOT NULL PRIMARY KEY,
 			reader_id INTEGER NOT NULL,
 			book_id INTEGER NOT NULL,
-			start TEXT NOT NULL,
-			end TEXT NOT NULL
+			start_date varchar(8) NOT NULL,
+			end_date varchar(8) NOT NULL
 		)`); err != nil {
 		return err
 	}

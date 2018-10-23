@@ -20,7 +20,7 @@ func Server() (*BooksServer, error) {
 }
 
 // Authors возвращает отправляет список авторов, чьи книги есть в библиотеке
-func (s *BooksServer) Authors(in *protocol.Nothing, p protocol.Books_AuthorsServer) error {
+func (s *BooksServer) Authors(in *protocol.NothingBooks, p protocol.Books_AuthorsServer) error {
 	writers, err := s.writersList()
 	if err != nil {
 		return err
