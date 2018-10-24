@@ -75,15 +75,17 @@ func getUserArrears(c *gin.Context) {
 	if err != nil {
 		panic(err)
 	}
-
 	ret := gin.H{}
 	for i, ar := range arrears {
-		ret[string(i)] = gin.H{
-			"id":        ar.ID,
-			"reader_id": ar.readerID,
-			"book_id":   ar.bookID,
-			"star":      ar.start,
-			"end":       ar.end,
+		book := BooksPartClient.getBookByID(ar.bookID)
+		ret[strconv.Itoa(i)] = gin.H{
+			"id":          ar.ID,
+			"reader_id":   ar.readerID,
+			"book_id":     ar.bookID,
+			"book_name":   book.Name,
+			"book_author": book.Author.Name,
+			"star":        ar.start,
+			"end":         ar.end,
 		}
 	}
 
@@ -93,7 +95,15 @@ func getUserArrears(c *gin.Context) {
 // 6. Должно быть минимум два запроса, выполняющие обновление данных на нескольких сервисах в рамках одной операции.
 // Регистрация нового пользователя и запись на него новой книги
 func newReaderWithArear(c *gin.Context) {
-
+	readerName := c.PostForm("reader")
+	bookIDstring := c.PostForm("book")
+	bookID64, err := strconv.ParseInt(bookIDstring, 10, 32)
+	if err != nil {
+		fmt.Printf("Error in parsing page number")
+		panic(err)
+	}
+	bookID := int32(bookID64)
+	book := BooksPartClient.getBookByID(bookID)
 }
 
 // Потеря читателем книги
@@ -115,6 +125,7 @@ func main() {
 	r := gin.Default()
 
 	r.GET("/getUserArrears", getUserArrears)
+	r.POST("/newReaderWithArear", newReaderWithArear)
 
 	r.Run(":" + port)
 }

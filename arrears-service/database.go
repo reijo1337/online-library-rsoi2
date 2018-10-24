@@ -31,9 +31,9 @@ func SetUpDatabase() (*Database, error) {
 
 	ddb := &Database{DB: db}
 
-	//	if err := setUpStartData(ddb); err != nil {
-	//		return nil, err
-	//	}
+	if err := setUpStartData(ddb); err != nil {
+		return nil, err
+	}
 
 	return ddb, nil
 
@@ -54,6 +54,35 @@ func createSchema(db *sql.DB) error {
 	return nil
 }
 
+func setUpStartData(db *Database) error {
+	data := []Arrear{
+		Arrear{
+			readerID: 1,
+			bookID:   2,
+			start:    "20181024",
+			end:      "20181124",
+		},
+		Arrear{
+			readerID: 2,
+			bookID:   3,
+			start:    "20181024",
+			end:      "20181124",
+		},
+		Arrear{
+			readerID: 3,
+			bookID:   4,
+			start:    "20181024",
+			end:      "20181124",
+		},
+	}
+	for _, d := range data {
+		if _, err := db.InsertNewArrear(d.readerID, d.bookID, d.start, d.end); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (db *Database) GetArrearsPaggin(userID int32, size int32, page int32) ([]*Arrear, error) {
 	resultArrears := make([]*Arrear, 0)
 	row, err := db.Query("SELECT * FROM arrears WHERE reader_id = $1 LIMIT $2 OFFSET $3", userID, size, (page-1)*size)
@@ -67,4 +96,20 @@ func (db *Database) GetArrearsPaggin(userID int32, size int32, page int32) ([]*A
 	}
 
 	return resultArrears, nil
+}
+
+func (db *Database) InsertNewArrear(readerID int32, bookID int32, startTime string, endTime string) (*Arrear, error) {
+	var ID int32
+	row := db.QueryRow("INSERT INTO arrears (reader_id, book_id, start_date, end_date) VALUES ($1, $2, $3, $4) RETURNING id",
+		readerID, bookID, startTime, endTime)
+	if err := row.Scan(&ID); err != nil {
+		return nil, err
+	}
+	return &Arrear{
+		ID:       ID,
+		readerID: readerID,
+		bookID:   bookID,
+		start:    startTime,
+		end:      endTime,
+	}, nil
 }

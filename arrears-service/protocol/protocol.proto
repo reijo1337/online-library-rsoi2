@@ -16,6 +16,12 @@ message PagingArrears {
     int32 Page = 3;
 }
 
+message NewArrear {
+    int32 ReaderID = 1;
+    int32 BookID = 2;
+}
+
 service Arrears {
     rpc GetPagedReadersArrears (PagingArrears) returns (stream Arrear) {}
+    rpc RegisterNewArrear(NewArrear) returns (Arrear) {}
 }

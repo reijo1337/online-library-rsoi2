@@ -56,7 +56,7 @@ func (s *BooksServer) writersList() ([]*protocol.Writer, error) {
 	return ret, nil
 }
 
-// Добавление новой книги в библиотеку
+// AddBook добавление новой книги в библиотеку
 func (s *BooksServer) AddBook(ctx context.Context, bookInfo *protocol.BookInsert) (*protocol.SomeID, error) {
 	newBookID, err := s.db.insertNewBook(bookInfo.BookName, bookInfo.AuthorName)
 
@@ -65,4 +65,14 @@ func (s *BooksServer) AddBook(ctx context.Context, bookInfo *protocol.BookInsert
 	}
 
 	return &protocol.SomeID{ID: newBookID.ID}, nil
+}
+
+// BookByID возвращает книгу по ID
+func (s *BooksServer) BookByID(ctx context.Context, req *protocol.SomeID) (*protocol.Book, error) {
+	book, err := s.db.getBookByID(req.GetID())
+	if err != nil {
+		return nil, err
+	}
+	writer := &protocol.Writer{ID: book.Author.ID, Name: book.Author.Name}
+	return &protocol.Book{ID: book.ID, Name: book.Name, Author: writer}, nil
 }

@@ -35,4 +35,5 @@ service Books {
     rpc Authors (NothingBooks) returns (stream Writer) {}
     rpc BookByAuthorAndName (WriterBookName) returns (Book) {}
     rpc AddBook(BookInsert) returns (SomeID) {}
+    rpc BookByID(SomeID) returns (Book) {}
 }

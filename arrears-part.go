@@ -67,3 +67,25 @@ func (ap *ArrearsPart) getArrearsPaging(userID int32, page int32, size int32) ([
 			})
 	}
 }
+
+func (ap *ArrearsPart) newArrear(readerID int32, bookID int32) (*Arrear, error) {
+	ctx := context.Background()
+
+	newArrearReq := &protocol.NewArrear{
+		ReaderID: readerID,
+		BookID:   bookID,
+	}
+
+	arrear, err := ap.arrears.RegisterNewArrear(ctx, newArrearReq)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Arrear{
+		ID:       arrear.GetID(),
+		readerID: arrear.GetReaderID(),
+		bookID:   arrear.GetBookID(),
+		start:    arrear.GetStart(),
+		end:      arrear.GetEnd(),
+	}, nil
+}

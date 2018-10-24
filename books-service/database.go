@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strconv"
 
 	_ "github.com/lib/pq"
 )
@@ -238,4 +239,40 @@ func (db *Database) insertNewBook(bookName string, authorName string) (*Book, er
 
 	book, err := db.insertBook(bookName, author)
 	return book, err
+}
+
+func (db *Database) getBookByID(ID int32) (*Book, error) {
+	rows, err := db.Query("SELECT name, author FROM books where id = $1", ID)
+	if err != nil {
+		return nil, err
+	}
+	var (
+		name     string
+		authorID int32
+	)
+	for rows.Next() {
+		rows.Scan(&name, &authorID)
+	}
+	if authorID == 0 {
+		return nil, errors.New("There is no books with ID " + strconv.Itoa(int(ID)))
+	}
+
+	rows, err = db.Query("SELECT name FROM writers WHERE id = $1", authorID)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var authorName string
+	for rows.Next() {
+		rows.Scan(&authorName)
+	}
+	return &Book{
+		ID:   ID,
+		Name: name,
+		Author: &Writer{
+			ID:   authorID,
+			Name: authorName,
+		},
+	}, nil
 }
