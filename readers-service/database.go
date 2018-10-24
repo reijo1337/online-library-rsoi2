@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log"
 
 	_ "github.com/lib/pq"
 )
@@ -32,12 +33,27 @@ func SetUpDatabase() (*Database, error) {
 
 	ddb := &Database{DB: db}
 
-	//	if err := setUpStartData(ddb); err != nil {
-	//		return nil, err
-	//	}
+	if err := setUpStartData(ddb); err != nil {
+		return nil, err
+	}
 
 	return ddb, nil
 
+}
+
+func setUpStartData(db *Database) error {
+	names := []string{
+		"Jhon Snow",
+		"Vladimir Putin",
+		"Ivan Ivanov",
+	}
+
+	for _, name := range names {
+		if _, err := db.addReader(name); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func createSchema(db *sql.DB) error {
@@ -99,6 +115,7 @@ func (db *Database) getReaderByName(name string) (*Reader, error) {
 	rows, err := db.Query("SELECT id FROM readers WHERE name = $1", name)
 
 	if err != nil {
+		log.Println(err.Error())
 		return nil, err
 	}
 
@@ -110,7 +127,8 @@ func (db *Database) getReaderByName(name string) (*Reader, error) {
 	if ID > 0 {
 		return &Reader{ID: ID, Name: name}, nil
 	} else {
-		return nil, errors.New("No such reader")
+		log.Println("No reader with name", name)
+		return nil, errors.New("No reader with name " + name)
 	}
 }
 

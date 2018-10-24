@@ -56,7 +56,7 @@ func createSchema(db *sql.DB) error {
 
 func (db *Database) GetArrearsPaggin(userID int32, size int32, page int32) ([]*Arrear, error) {
 	resultArrears := make([]*Arrear, 0)
-	row, err := db.Query("SELECT * FROM arrears WHERE reader_id = $1 LIMIT $2 OFFSET $2", userID, size, (page-1)*size)
+	row, err := db.Query("SELECT * FROM arrears WHERE reader_id = $1 LIMIT $2 OFFSET $3", userID, size, (page-1)*size)
 	if err != nil {
 		return nil, err
 	}

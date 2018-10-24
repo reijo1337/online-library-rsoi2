@@ -43,7 +43,8 @@ func init() {
 // 7. При получении списка данных предусмотреть пагинацию.
 // Запрос записанных на юзера книг по ID
 func getUserArrears(c *gin.Context) {
-	name := c.Param("name")
+	name := c.Query("name")
+	fmt.Println("name: ", name)
 	pageSize := c.DefaultQuery("size", "10")
 	pageNumber := c.DefaultQuery("page", "1")
 	page, err := strconv.ParseInt(pageNumber, 10, 32)
@@ -113,7 +114,7 @@ func main() {
 
 	r := gin.Default()
 
-	r.GET("/getUserArrears/:id", getUserArrears)
+	r.GET("/getUserArrears", getUserArrears)
 
 	r.Run(":" + port)
 }
