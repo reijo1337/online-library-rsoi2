@@ -26,3 +26,8 @@ type Arrear struct {
 	start    string
 	end      string
 }
+
+type NewReaderWithArrearRequestBody struct {
+	ReaderName string `json:"reader"`
+	BookID     int32  `json:"book"`
+}

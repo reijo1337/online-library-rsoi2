@@ -92,3 +92,14 @@ func (rp *ReadersPart) getReaderByID(ID int32) (Reader, error) {
 
 	return Reader{ID: reader.GetID(), Name: reader.GetName()}, nil
 }
+
+func (rp *ReadersPart) registerReader(name string) (*Reader, error) {
+	ctx := context.Background()
+	readerNameReq := &protocol.ReaderName{Name: name}
+
+	reader, err := rp.readers.RegisterReader(ctx, readerNameReq)
+	if err != nil {
+		return nil, err
+	}
+	return &Reader{ID: reader.GetID(), Name: reader.GetName()}, nil
+}

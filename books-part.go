@@ -52,13 +52,13 @@ func (bp *BooksPart) addNewBook(book Book) int32 {
 	return id.ID
 }
 
-func (bp *BooksPart) getBookByID(ID int32) *Book {
+func (bp *BooksPart) getBookByID(ID int32) (*Book, error) {
 	ctx := context.Background()
 	bookID := &protocol.SomeID{ID: ID}
 
 	book, err := bp.books.BookByID(ctx, bookID)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	return &Book{
@@ -68,5 +68,5 @@ func (bp *BooksPart) getBookByID(ID int32) *Book {
 			ID:   book.GetAuthor().GetID(),
 			Name: book.GetAuthor().GetName(),
 		},
-	}
+	}, nil
 }
