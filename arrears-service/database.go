@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"log"
 
 	_ "github.com/lib/pq"
 )
@@ -18,23 +19,26 @@ type Database struct {
 }
 
 func SetUpDatabase() (*Database, error) {
+	log.Println("DB: Connecting to", DB_NAME, "database")
 	db, err := sql.Open("postgres", fmt.Sprintf("user=%s password=%s dbname=%s sslmode=disable", USER, PASSWORD, DB_NAME))
 	if err != nil {
 		return nil, err
 	}
-
 	db.SetMaxOpenConns(10)
 
+	log.Println("Creating schema")
 	if err := createSchema(db); err != nil {
 		return nil, err
 	}
 
 	ddb := &Database{DB: db}
 
+	log.Println("DB: Setting up start data")
 	if err := setUpStartData(ddb); err != nil {
 		return nil, err
 	}
 
+	log.Println("DB: succesful setup")
 	return ddb, nil
 
 }
@@ -84,6 +88,7 @@ func setUpStartData(db *Database) error {
 }
 
 func (db *Database) GetArrearsPaggin(userID int32, size int32, page int32) ([]*Arrear, error) {
+	log.Println("DB: Getting", page, "page of arrears with reader id", userID, "with page size", size)
 	resultArrears := make([]*Arrear, 0)
 	row, err := db.Query("SELECT * FROM arrears WHERE reader_id = $1 LIMIT $2 OFFSET $3", userID, size, (page-1)*size)
 	if err != nil {
@@ -95,16 +100,19 @@ func (db *Database) GetArrearsPaggin(userID int32, size int32, page int32) ([]*A
 		resultArrears = append(resultArrears, currentArrear)
 	}
 
+	log.Println("DB: arrears received succesfully")
 	return resultArrears, nil
 }
 
 func (db *Database) InsertNewArrear(readerID int32, bookID int32, startTime string, endTime string) (*Arrear, error) {
+	log.Println("DB: Inserting new arrear with", readerID, "reader id and ", bookID, "book id for period [", startTime, ";", endTime, "]")
 	var ID int32
 	row := db.QueryRow("INSERT INTO arrears (reader_id, book_id, start_date, end_date) VALUES ($1, $2, $3, $4) RETURNING id",
 		readerID, bookID, startTime, endTime)
 	if err := row.Scan(&ID); err != nil {
 		return nil, err
 	}
+	log.Println("DB: arrear inserted succesfully")
 	return &Arrear{
 		ID:       ID,
 		readerID: readerID,
@@ -115,6 +123,7 @@ func (db *Database) InsertNewArrear(readerID int32, bookID int32, startTime stri
 }
 
 func (db *Database) GetArrearByID(ID int32) (*Arrear, error) {
+	log.Println("DB: Getting arrear with ID", ID)
 	var (
 		readerID int32
 		bookID   int32
@@ -127,6 +136,7 @@ func (db *Database) GetArrearByID(ID int32) (*Arrear, error) {
 	if err != nil {
 		return nil, err
 	}
+	log.Println("DB: arrear received succesfully")
 	return &Arrear{
 		ID:       ID,
 		readerID: readerID,
@@ -137,6 +147,7 @@ func (db *Database) GetArrearByID(ID int32) (*Arrear, error) {
 }
 
 func (db *Database) CloseArrayByID(ID int32) error {
+	log.Println("DB: deleting arrear with ID", ID)
 	_, err := db.Query("DELETE FROM arrears WHERE id = $1", ID)
 	return err
 }

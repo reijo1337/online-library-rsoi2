@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"log"
 	"strconv"
 	"time"
 
@@ -13,6 +14,7 @@ type ArrearServer struct {
 }
 
 func Server() (*ArrearServer, error) {
+	log.Println("Set up arrear service...")
 	db, err := SetUpDatabase()
 	if err != nil {
 		return nil, err
@@ -21,8 +23,10 @@ func Server() (*ArrearServer, error) {
 }
 
 func (as *ArrearServer) GetPagedReadersArrears(in *protocol.PagingArrears, p protocol.Arrears_GetPagedReadersArrearsServer) error {
+	log.Println("Server: New request for arrears with pagging. User ID:", in.ID, ", page:", in.Page, ", page size:", in.Size)
 	arrears, err := as.db.GetArrearsPaggin(in.ID, in.Size, in.Page)
 	if err != nil {
+		log.Fatalln("Server: Can't process this request: ", err.Error())
 		return err
 	}
 	for _, arrear := range arrears {
@@ -34,23 +38,30 @@ func (as *ArrearServer) GetPagedReadersArrears(in *protocol.PagingArrears, p pro
 			End:      arrear.end,
 		}
 		if err := p.Send(ar); err != nil {
+			log.Fatalln("Server: Can't send arrear: ", err.Error())
 			return err
 		}
 	}
+	log.Println("Server: Request processed successfully")
 	return nil
 }
 
 func (as *ArrearServer) RegisterNewArrear(ctx context.Context, in *protocol.NewArrear) (*protocol.Arrear, error) {
+	log.Println("Server: New request for arrear registration with", in.GetBookID(), "book ID and", in.GetReaderID(), "reader ID")
 	startTime := time.Now()
 	endTime := startTime.AddDate(0, 1, 0)
 
 	start := parseDate(startTime)
 	end := parseDate(endTime)
 
+	log.Println("Server: arrear period [", start, ";", end, "]")
+
 	arrear, err := as.db.InsertNewArrear(in.GetReaderID(), in.GetBookID(), start, end)
 	if err != nil {
+		log.Fatalln("Server: Can't make new arrear:", err.Error())
 		return nil, err
 	}
+	log.Println("Server: Request processed successfully")
 	return &protocol.Arrear{
 		ID:       arrear.ID,
 		ReaderID: arrear.readerID,
@@ -61,10 +72,13 @@ func (as *ArrearServer) RegisterNewArrear(ctx context.Context, in *protocol.NewA
 }
 
 func (as *ArrearServer) GetArrearByID(ctx context.Context, in *protocol.SomeArrearsID) (*protocol.Arrear, error) {
+	log.Println("Server: New request for arrear with", in.GetID(), "ID")
 	arrear, err := as.db.GetArrearByID(in.GetID())
 	if err != nil {
+		log.Fatalln("Server: Can't getting arrear:", err.Error())
 		return nil, err
 	}
+	log.Println("Server: Request processed successfully")
 	return &protocol.Arrear{
 		ID:       arrear.ID,
 		ReaderID: arrear.readerID,
@@ -75,8 +89,14 @@ func (as *ArrearServer) GetArrearByID(ctx context.Context, in *protocol.SomeArre
 }
 
 func (as *ArrearServer) DeleteArrearByID(ctx context.Context, in *protocol.SomeArrearsID) (*protocol.NothingArrear, error) {
+	log.Println("Server: New request for deleting arrear with", in.GetID(), "ID")
 	err := as.db.CloseArrayByID(in.GetID())
 
+	if err != nil {
+		log.Fatalln("Server: Can't delete this arrear")
+	} else {
+		log.Println("Server: Request processed successfully")
+	}
 	return &protocol.NothingArrear{Dummy: true}, err
 }
 
