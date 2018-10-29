@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log"
 	"strconv"
 
 	_ "github.com/lib/pq"
@@ -20,6 +21,7 @@ type Database struct {
 }
 
 func SetUpDatabase() (*Database, error) {
+	log.Println("DB: Connecting to", DB_NAME, "database")
 	db, err := sql.Open("postgres", fmt.Sprintf("user=%s password=%s dbname=%s sslmode=disable", USER, PASSWORD, DB_NAME))
 	if err != nil {
 		return nil, err
@@ -27,16 +29,19 @@ func SetUpDatabase() (*Database, error) {
 
 	db.SetMaxOpenConns(10)
 
+	log.Println("Creating schema")
 	if err := createSchema(db); err != nil {
 		return nil, err
 	}
 
 	ddb := &Database{DB: db}
 
+	log.Println("DB: Setting up start data")
 	if err := setUpStartData(ddb); err != nil {
 		return nil, err
 	}
 
+	log.Println("DB: succesful setup")
 	return ddb, nil
 
 }
@@ -127,6 +132,7 @@ func setUpStartData(db *Database) error {
 }
 
 func (db *Database) insertWriter(name string) (*Writer, error) {
+	log.Println("DB: Inserting new writer named", name)
 	rows, err := db.Query("SELECT id FROM writers WHERE name = $1", name)
 
 	if err != nil {
@@ -148,10 +154,12 @@ func (db *Database) insertWriter(name string) (*Writer, error) {
 		return nil, err
 	}
 
+	log.Println("DB: writer inserted succesfully")
 	return &Writer{ID: ID, Name: name}, nil
 }
 
 func (db *Database) insertBook(name string, writer *Writer) (*Book, error) {
+	log.Println("DB: Inserting new book named", name, "written by", writer.Name)
 	rows, err := db.Query("SELECT id FROM books WHERE name = $1 AND author = $2", name, writer.ID)
 
 	if err != nil {
@@ -173,10 +181,12 @@ func (db *Database) insertBook(name string, writer *Writer) (*Book, error) {
 		return nil, err
 	}
 
+	log.Println("DB: book inserted succesfully")
 	return &Book{ID: ID, Name: name, Author: writer}, nil
 }
 
 func (db *Database) getAllAuthors() ([]*Writer, error) {
+	log.Println("DB: Getting all writers")
 	resultWriters := make([]*Writer, 0)
 	rows, err := db.Query("SELECT * FROM positions ORDER BY time DESC")
 
@@ -191,10 +201,12 @@ func (db *Database) getAllAuthors() ([]*Writer, error) {
 		resultWriters = append(resultWriters, currentWriterInRows)
 	}
 
+	log.Println("DB: writers received succesfully")
 	return resultWriters, nil
 }
 
 func (db *Database) getBookByNameAndAuthor(name string, author string) (*Book, error) {
+	log.Println("DB: Getting book named", name, "written by", author)
 	rows, err := db.Query("SELECT id FROM writers WHERE name = $1", author)
 
 	if err != nil {
@@ -225,6 +237,7 @@ func (db *Database) getBookByNameAndAuthor(name string, author string) (*Book, e
 	}
 
 	if ID > 0 {
+		log.Println("DB: book received succesfully")
 		return &Book{
 				ID:     ID,
 				Name:   name,
@@ -247,6 +260,7 @@ func (db *Database) insertNewBook(bookName string, authorName string) (*Book, er
 }
 
 func (db *Database) getBookByID(ID int32) (*Book, error) {
+	log.Println("DB: Getting book with ID", ID)
 	rows, err := db.Query("SELECT name, author FROM books where id = $1", ID)
 	if err != nil {
 		return nil, err
@@ -272,6 +286,7 @@ func (db *Database) getBookByID(ID int32) (*Book, error) {
 	for rows.Next() {
 		rows.Scan(&authorName)
 	}
+	log.Println("DB: book received succesfully")
 	return &Book{
 		ID:   ID,
 		Name: name,
@@ -283,6 +298,7 @@ func (db *Database) getBookByID(ID int32) (*Book, error) {
 }
 
 func (db *Database) changeStatusBookByID(ID int32, status bool) (bool, error) {
+	log.Println("DB: Changing 'free' status of book with ID", ID, "to", status)
 	var free bool
 	err := db.QueryRow("SELECT free FROM books where id = $1", ID).Scan(&free)
 	if err != nil {
@@ -297,6 +313,6 @@ func (db *Database) changeStatusBookByID(ID int32, status bool) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-
+	log.Println("DB: Book status changed successfully")
 	return true, nil
 }
