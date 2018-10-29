@@ -11,6 +11,7 @@ type Book struct {
 	ID     int32
 	Name   string
 	Author *Writer
+	Free   bool
 }
 
 // Reader описывает модель читателя, который может брать книги в библиотеке

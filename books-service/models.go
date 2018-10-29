@@ -9,4 +9,5 @@ type Book struct {
 	ID     int32
 	Name   string
 	Author *Writer
+	Free   bool
 }

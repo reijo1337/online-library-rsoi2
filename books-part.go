@@ -68,5 +68,17 @@ func (bp *BooksPart) getBookByID(ID int32) (*Book, error) {
 			ID:   book.GetAuthor().GetID(),
 			Name: book.GetAuthor().GetName(),
 		},
+		Free: book.GetFree(),
 	}, nil
+}
+
+func (bp *BooksPart) changeBookStatusByID(ID int32, status bool) error {
+	ctx := context.Background()
+	req := &protocol.ChangeStatus{
+		BookID:    ID,
+		NewStatus: status,
+	}
+
+	_, err := bp.books.ChangeBookStatusByID(ctx, req)
+	return err
 }

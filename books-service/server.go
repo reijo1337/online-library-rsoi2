@@ -76,3 +76,8 @@ func (s *BooksServer) BookByID(ctx context.Context, req *protocol.SomeID) (*prot
 	writer := &protocol.Writer{ID: book.Author.ID, Name: book.Author.Name}
 	return &protocol.Book{ID: book.ID, Name: book.Name, Author: writer}, nil
 }
+
+func (s *BooksServer) ChangeBookStatusByID(ctx context.Context, in *protocol.ChangeStatus) (*protocol.NothingBooks, error) {
+	changed, err := s.db.changeStatusBookByID(in.GetBookID(), in.GetNewStatus())
+	return &protocol.NothingBooks{Dummy: changed}, err
+}

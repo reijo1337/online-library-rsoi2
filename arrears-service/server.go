@@ -60,6 +60,26 @@ func (as *ArrearServer) RegisterNewArrear(ctx context.Context, in *protocol.NewA
 	}, nil
 }
 
+func (as *ArrearServer) GetArrearByID(ctx context.Context, in *protocol.SomeArrearsID) (*protocol.Arrear, error) {
+	arrear, err := as.db.GetArrearByID(in.GetID())
+	if err != nil {
+		return nil, err
+	}
+	return &protocol.Arrear{
+		ID:       arrear.ID,
+		ReaderID: arrear.readerID,
+		BookID:   arrear.bookID,
+		Start:    arrear.start,
+		End:      arrear.end,
+	}, nil
+}
+
+func (as *ArrearServer) DeleteArrearByID(ctx context.Context, in *protocol.SomeArrearsID) (*protocol.NothingArrear, error) {
+	err := as.db.CloseArrayByID(in.GetID())
+
+	return &protocol.NothingArrear{Dummy: true}, err
+}
+
 func parseDate(t time.Time) string {
 	year := strconv.Itoa(t.Year())
 	month := strconv.Itoa(int(t.Month()))

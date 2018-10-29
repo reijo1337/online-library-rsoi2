@@ -102,8 +102,8 @@ func getUserArrears(c *gin.Context) {
 }
 
 // 6. Должно быть минимум два запроса, выполняющие обновление данных на нескольких сервисах в рамках одной операции.
-// Регистрация нового пользователя и запись на него новой книги
-func newReaderWithArear(c *gin.Context) {
+// Запись книги на пользователя
+func newArear(c *gin.Context) {
 	var req NewReaderWithArrearRequestBody
 	if err := c.ShouldBind(&req); err != nil {
 		panic(err)
@@ -112,11 +112,15 @@ func newReaderWithArear(c *gin.Context) {
 	if _, err := BooksPartClient.getBookByID(req.BookID); err != nil {
 		panic(err)
 	}
-	newReader, err := ReadersPartClient.registerReader(req.ReaderName)
+	reader, err := ReadersPartClient.getReaderByName(req.ReaderName)
 	if err != nil {
 		panic(err)
 	}
-	arrear, err := ArrearsPartClient.newArrear(newReader.ID, req.BookID)
+	err = BooksPartClient.changeBookStatusByID(req.BookID, false)
+	if err != nil {
+		panic(err)
+	}
+	arrear, err := ArrearsPartClient.newArrear(reader.ID, req.BookID)
 	if err != nil {
 		panic(err)
 	}
@@ -132,14 +136,35 @@ func newReaderWithArear(c *gin.Context) {
 	)
 }
 
-// Потеря читателем книги
-func registerBookLost(c *gin.Context) {
+// Возврат книги
+func closeArrear(c *gin.Context) {
+	arrearIDString := c.Query("id")
+	arrearID64, err := strconv.ParseInt(arrearIDString, 10, 32)
+	if err != nil {
+		fmt.Printf("Error in parsing arrear ID number")
+		panic(err)
+	}
+	arrearID := int32(arrearID64)
 
-}
+	arrear, err := ArrearsPartClient.getArrearByID(arrearID)
+	if err != nil {
+		panic(err)
+	}
+	err = ArrearsPartClient.closeArrearByID(arrearID)
+	if err != nil {
+		panic(err)
+	}
 
-// Получение списка доступных книг
-func getFreeBooks(c *gin.Context) {
-
+	err = BooksPartClient.changeBookStatusByID(arrear.bookID, true)
+	if err != nil {
+		panic(err)
+	}
+	c.JSON(
+		200,
+		gin.H{
+			"ok": "ok",
+		},
+	)
 }
 
 func main() {
@@ -151,7 +176,8 @@ func main() {
 	r := gin.Default()
 
 	r.GET("/getUserArrears", getUserArrears)
-	r.POST("/newReaderWithArear", newReaderWithArear)
+	r.POST("/newArear", newArear)
+	r.DELETE("/closeArrear", closeArrear)
 
 	r.Run(":" + port)
 }

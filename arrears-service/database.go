@@ -113,3 +113,30 @@ func (db *Database) InsertNewArrear(readerID int32, bookID int32, startTime stri
 		end:      endTime,
 	}, nil
 }
+
+func (db *Database) GetArrearByID(ID int32) (*Arrear, error) {
+	var (
+		readerID int32
+		bookID   int32
+		start    string
+		end      string
+	)
+
+	err := db.QueryRow("SELECT reader_id, book_id, start_date, end_date FROM arrears WHERE id = $1", ID).Scan(
+		&readerID, &bookID, &start, &end)
+	if err != nil {
+		return nil, err
+	}
+	return &Arrear{
+		ID:       ID,
+		readerID: readerID,
+		bookID:   bookID,
+		start:    start,
+		end:      end,
+	}, nil
+}
+
+func (db *Database) CloseArrayByID(ID int32) error {
+	_, err := db.Query("DELETE FROM arrears WHERE id = $1", ID)
+	return err
+}

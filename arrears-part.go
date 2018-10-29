@@ -89,3 +89,31 @@ func (ap *ArrearsPart) newArrear(readerID int32, bookID int32) (*Arrear, error) 
 		end:      arrear.GetEnd(),
 	}, nil
 }
+
+func (ap *ArrearsPart) getArrearByID(ID int32) (*Arrear, error) {
+	ctx := context.Background()
+
+	arrearID := &protocol.SomeArrearsID{
+		ID: ID,
+	}
+
+	arrear, err := ap.arrears.GetArrearByID(ctx, arrearID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Arrear{
+		ID:       arrear.GetID(),
+		readerID: arrear.GetReaderID(),
+		bookID:   arrear.GetBookID(),
+		start:    arrear.GetStart(),
+		end:      arrear.GetEnd(),
+	}, nil
+}
+
+func (ap *ArrearsPart) closeArrearByID(ID int32) error {
+	ctx := context.Background()
+	req := &protocol.SomeArrearsID{ID: ID}
+	_, err := ap.arrears.DeleteArrearByID(ctx, req)
+	return err
+}

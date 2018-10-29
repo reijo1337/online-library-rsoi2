@@ -54,7 +54,8 @@ func createSchema(db *sql.DB) error {
 		CREATE TABLE IF NOT EXISTS books (
 			id SERIAL NOT NULL PRIMARY KEY,
 			author INT NOT NULL REFERENCES writers (id),
-			name VARCHAR(50) NOT NULL UNIQUE
+			name VARCHAR(50) NOT NULL UNIQUE,
+			free BOOLEAN DEFAULT TRUE
 		)
 	`); err != nil {
 		return err
@@ -163,7 +164,7 @@ func (db *Database) insertBook(name string, writer *Writer) (*Book, error) {
 	}
 
 	if ID > 0 {
-		return &Book{ID: ID, Name: name, Author: writer}, nil
+		return &Book{ID: ID, Name: name, Author: writer, Free: true}, nil
 	}
 
 	row := db.QueryRow("INSERT INTO books (name, author) VALUES ($1, $2) RETURNING id", name, writer.ID)
@@ -211,24 +212,28 @@ func (db *Database) getBookByNameAndAuthor(name string, author string) (*Book, e
 
 	returnWriter := &Writer{ID: ID, Name: author}
 
-	rows, err = db.Query("SELECT id FROM books WHERE name = $1 AND author = $2", name, ID)
+	rows, err = db.Query("SELECT id, free FROM books WHERE name = $1 AND author = $2", name, ID)
 
 	if err != nil {
 		return nil, err
 	}
 
 	ID = 0
+	var free bool
 	for rows.Next() {
-		rows.Scan(&ID)
+		rows.Scan(&ID, free)
 	}
-
-	returnBook := &Book{ID: ID, Name: name, Author: returnWriter}
 
 	if ID > 0 {
-		return returnBook, nil
+		return &Book{
+				ID:     ID,
+				Name:   name,
+				Author: returnWriter,
+				Free:   free},
+			nil
 	}
 
-	return nil, nil
+	return nil, errors.New("There is no book with name " + name)
 }
 
 func (db *Database) insertNewBook(bookName string, authorName string) (*Book, error) {
@@ -275,4 +280,23 @@ func (db *Database) getBookByID(ID int32) (*Book, error) {
 			Name: authorName,
 		},
 	}, nil
+}
+
+func (db *Database) changeStatusBookByID(ID int32, status bool) (bool, error) {
+	var free bool
+	err := db.QueryRow("SELECT free FROM books where id = $1", ID).Scan(&free)
+	if err != nil {
+		return false, err
+	}
+
+	if free == status {
+		return false, errors.New("This book already in your state")
+	}
+
+	_, err = db.Query("UPDATE books SET free = $2 WHERE id = $1", ID, status)
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
 }

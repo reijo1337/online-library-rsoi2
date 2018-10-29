@@ -21,7 +21,17 @@ message NewArrear {
     int32 BookID = 2;
 }
 
+message SomeArrearsID{
+    int32 ID = 1;
+}
+
+message NothingArrear {
+    bool Dummy = 1;
+}
+
 service Arrears {
     rpc GetPagedReadersArrears (PagingArrears) returns (stream Arrear) {}
     rpc RegisterNewArrear(NewArrear) returns (Arrear) {}
+    rpc GetArrearByID(SomeArrearsID) returns (Arrear) {}
+    rpc DeleteArrearByID(SomeArrearsID) returns (NothingArrear) {}
 }
