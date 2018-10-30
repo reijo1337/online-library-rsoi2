@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"io"
+	"log"
 	"os"
 
 	"github.com/reijo1337/online-library-rsoi2/arrears-service/protocol"
@@ -15,21 +16,25 @@ type ArrearsPart struct {
 }
 
 func NewArrearsPart() (*ArrearsPart, error) {
+	log.Println("Arrear Client: Connecting to arrear service...")
 	addr := os.Getenv("ARREARSADDR")
 	if addr == "" {
 		addr = "0.0.0.0"
 	}
 
+	log.Println("Arrear Client: arrear service addres:", addr+":8083")
 	grpcConn, err := grpc.Dial(
 		addr+":8083",
 		grpc.WithInsecure(),
 	)
 
 	if err != nil {
+		log.Println("Arrear Client: Can't connect to remote service")
 		return nil, err
 	}
 
 	arrears := protocol.NewArrearsClient(grpcConn)
+	log.Println("Arrear Client: success!")
 	return &ArrearsPart{
 		conn:    grpcConn,
 		arrears: arrears,
@@ -37,6 +42,7 @@ func NewArrearsPart() (*ArrearsPart, error) {
 }
 
 func (ap *ArrearsPart) getArrearsPaging(userID int32, page int32, size int32) ([]Arrear, error) {
+	log.Println("Arrear Client: Getting arrears with pagging. User ID:", userID, ", page:", page, ", page size:", size)
 	ctx := context.Background()
 	in := &protocol.PagingArrears{
 		ID:   userID,
@@ -45,6 +51,7 @@ func (ap *ArrearsPart) getArrearsPaging(userID int32, page int32, size int32) ([
 	}
 	arrearsServ, err := ap.arrears.GetPagedReadersArrears(ctx, in)
 	if err != nil {
+		log.Println("Arrear Client: Can't recieve arrears list")
 		return nil, err
 	}
 
@@ -53,8 +60,10 @@ func (ap *ArrearsPart) getArrearsPaging(userID int32, page int32, size int32) ([
 	for {
 		recvArrear, err := arrearsServ.Recv()
 		if err == io.EOF {
+			log.Println("Arrear Client: All arrears recieved successfully")
 			return arrears, nil
 		} else if err != nil {
+			log.Println("Arrear Client: Can't receive arrear")
 			return nil, err
 		}
 		arrears = append(arrears,
@@ -69,6 +78,7 @@ func (ap *ArrearsPart) getArrearsPaging(userID int32, page int32, size int32) ([
 }
 
 func (ap *ArrearsPart) newArrear(readerID int32, bookID int32) (*Arrear, error) {
+	log.Println("Arrear Client: Registering new arrear for reader with ID", readerID, "and book ID", bookID)
 	ctx := context.Background()
 
 	newArrearReq := &protocol.NewArrear{
@@ -78,9 +88,11 @@ func (ap *ArrearsPart) newArrear(readerID int32, bookID int32) (*Arrear, error) 
 
 	arrear, err := ap.arrears.RegisterNewArrear(ctx, newArrearReq)
 	if err != nil {
+		log.Println("Arrear Client: Can't register new arrear")
 		return nil, err
 	}
 
+	log.Println("Arrear Client: Arrear registered successfully")
 	return &Arrear{
 		ID:       arrear.GetID(),
 		readerID: arrear.GetReaderID(),
@@ -91,6 +103,7 @@ func (ap *ArrearsPart) newArrear(readerID int32, bookID int32) (*Arrear, error) 
 }
 
 func (ap *ArrearsPart) getArrearByID(ID int32) (*Arrear, error) {
+	log.Println("Arrear Client: Getting arrear with ID", ID)
 	ctx := context.Background()
 
 	arrearID := &protocol.SomeArrearsID{
@@ -99,9 +112,11 @@ func (ap *ArrearsPart) getArrearByID(ID int32) (*Arrear, error) {
 
 	arrear, err := ap.arrears.GetArrearByID(ctx, arrearID)
 	if err != nil {
+		log.Println("Arrear Client: Can't get arrear")
 		return nil, err
 	}
 
+	log.Println("Arrear Client: Arrear received successfully")
 	return &Arrear{
 		ID:       arrear.GetID(),
 		readerID: arrear.GetReaderID(),
@@ -112,8 +127,14 @@ func (ap *ArrearsPart) getArrearByID(ID int32) (*Arrear, error) {
 }
 
 func (ap *ArrearsPart) closeArrearByID(ID int32) error {
+	log.Println("Arrear Client: Close register with ID", ID)
 	ctx := context.Background()
 	req := &protocol.SomeArrearsID{ID: ID}
 	_, err := ap.arrears.DeleteArrearByID(ctx, req)
+	if err != nil {
+		log.Println("Arrear Client: Can't close arrear")
+	} else {
+		log.Println("Arrear Client: Arrear closed succesfully")
+	}
 	return err
 }
