@@ -26,7 +26,7 @@ func (as *ArrearServer) GetPagedReadersArrears(in *protocol.PagingArrears, p pro
 	log.Println("Server: New request for arrears with pagging. User ID:", in.ID, ", page:", in.Page, ", page size:", in.Size)
 	arrears, err := as.db.GetArrearsPaggin(in.ID, in.Size, in.Page)
 	if err != nil {
-		log.Fatalln("Server: Can't process this request: ", err.Error())
+		log.Println("Server: Can't process this request: ", err.Error())
 		return err
 	}
 	for _, arrear := range arrears {
@@ -38,7 +38,7 @@ func (as *ArrearServer) GetPagedReadersArrears(in *protocol.PagingArrears, p pro
 			End:      arrear.end,
 		}
 		if err := p.Send(ar); err != nil {
-			log.Fatalln("Server: Can't send arrear: ", err.Error())
+			log.Println("Server: Can't send arrear: ", err.Error())
 			return err
 		}
 	}
@@ -58,7 +58,7 @@ func (as *ArrearServer) RegisterNewArrear(ctx context.Context, in *protocol.NewA
 
 	arrear, err := as.db.InsertNewArrear(in.GetReaderID(), in.GetBookID(), start, end)
 	if err != nil {
-		log.Fatalln("Server: Can't make new arrear:", err.Error())
+		log.Println("Server: Can't make new arrear:", err.Error())
 		return nil, err
 	}
 	log.Println("Server: Request processed successfully")
@@ -75,7 +75,7 @@ func (as *ArrearServer) GetArrearByID(ctx context.Context, in *protocol.SomeArre
 	log.Println("Server: New request for arrear with", in.GetID(), "ID")
 	arrear, err := as.db.GetArrearByID(in.GetID())
 	if err != nil {
-		log.Fatalln("Server: Can't getting arrear:", err.Error())
+		log.Println("Server: Can't getting arrear:", err.Error())
 		return nil, err
 	}
 	log.Println("Server: Request processed successfully")
@@ -93,7 +93,7 @@ func (as *ArrearServer) DeleteArrearByID(ctx context.Context, in *protocol.SomeA
 	err := as.db.CloseArrayByID(in.GetID())
 
 	if err != nil {
-		log.Fatalln("Server: Can't delete this arrear")
+		log.Println("Server: Can't delete this arrear")
 	} else {
 		log.Println("Server: Request processed successfully")
 	}
