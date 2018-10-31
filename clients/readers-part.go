@@ -1,4 +1,4 @@
-package main
+package clients
 
 import (
 	"context"
@@ -11,6 +11,13 @@ import (
 
 	"github.com/reijo1337/online-library-rsoi2/readers-service/protocol"
 )
+
+type ReadersPartInterface interface {
+	GetAllReaders() ([]Reader, error)
+	GetReaderByName(name string) (Reader, error)
+	GetReaderByID(ID int32) (Reader, error)
+	RegisterReader(name string) (*Reader, error)
+}
 
 type ReadersPart struct {
 	conn    *grpc.ClientConn
@@ -42,7 +49,7 @@ func NewReadersPart() (*ReadersPart, error) {
 	}, nil
 }
 
-func (rp *ReadersPart) getAllReaders() ([]Reader, error) {
+func (rp *ReadersPart) GetAllReaders() ([]Reader, error) {
 	log.Println("Readers Client: Getting readers list")
 	ctx := context.Background()
 
@@ -73,7 +80,7 @@ func (rp *ReadersPart) getAllReaders() ([]Reader, error) {
 	}
 }
 
-func (rp *ReadersPart) getReaderByName(name string) (Reader, error) {
+func (rp *ReadersPart) GetReaderByName(name string) (Reader, error) {
 	log.Println("Readers Client: Getting reader by name", name)
 	ctx := context.Background()
 
@@ -90,7 +97,7 @@ func (rp *ReadersPart) getReaderByName(name string) (Reader, error) {
 	return Reader{ID: reader.GetID(), Name: reader.GetName()}, nil
 }
 
-func (rp *ReadersPart) getReaderByID(ID int32) (Reader, error) {
+func (rp *ReadersPart) GetReaderByID(ID int32) (Reader, error) {
 	log.Println("Readers Client: Getting reader by ID", ID)
 	ctx := context.Background()
 
@@ -107,7 +114,7 @@ func (rp *ReadersPart) getReaderByID(ID int32) (Reader, error) {
 	return Reader{ID: reader.GetID(), Name: reader.GetName()}, nil
 }
 
-func (rp *ReadersPart) registerReader(name string) (*Reader, error) {
+func (rp *ReadersPart) RegisterReader(name string) (*Reader, error) {
 	log.Println("Readers Client: Registration of new reader")
 	ctx := context.Background()
 	readerNameReq := &protocol.ReaderName{Name: name}

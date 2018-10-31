@@ -7,29 +7,30 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/reijo1337/online-library-rsoi2/clients"
 )
 
 var (
-	BooksPartClient   *BooksPart
-	ReadersPartClient *ReadersPart
-	ArrearsPartClient *ArrearsPart
+	BooksPartClient   clients.BooksPartInterface
+	ReadersPartClient clients.ReadersPartInterface
+	ArrearsPartClient clients.ArrearsPartInterface
 )
 
 func init() {
 	log.Println("Gateway: Initing...")
-	bpc, err := NewBooksPart()
+	bpc, err := clients.NewBooksPart()
 	if err != nil {
 		log.Println("Initing books part error")
 		panic(err)
 	}
 
-	rpc, err := NewReadersPart()
+	rpc, err := clients.NewReadersPart()
 	if err != nil {
 		log.Println("Initing readers part error")
 		panic(err)
 	}
 
-	apc, err := NewArrearsPart()
+	apc, err := clients.NewArrearsPart()
 	if err != nil {
 		log.Println("Initing arrears part error")
 		panic(err)
@@ -75,7 +76,7 @@ func getUserArrears(c *gin.Context) {
 	sizeInt := int32(size)
 
 	log.Println("Gateway: Getting reader from remote service")
-	reader, err := ReadersPartClient.getReaderByName(name)
+	reader, err := ReadersPartClient.GetReaderByName(name)
 	if err != nil {
 		log.Println("Gateway: Error while getting reader by name:", err.Error())
 		c.JSON(
@@ -88,7 +89,7 @@ func getUserArrears(c *gin.Context) {
 	}
 
 	log.Println("Gateway: Getting arrears from remote service")
-	arrears, err := ArrearsPartClient.getArrearsPaging(reader.ID, pageInt, sizeInt)
+	arrears, err := ArrearsPartClient.GetArrearsPaging(reader.ID, pageInt, sizeInt)
 	if err != nil {
 		log.Println("Gateway: Error while getting arrears:", err.Error())
 		c.JSON(
@@ -101,7 +102,7 @@ func getUserArrears(c *gin.Context) {
 	}
 	ret := gin.H{}
 	for i, ar := range arrears {
-		book, err := BooksPartClient.getBookByID(ar.bookID)
+		book, err := BooksPartClient.GetBookByID(ar.BookID)
 		if err != nil {
 			log.Println("Gateway: Error while getting book by ID:", err.Error())
 			c.JSON(
@@ -114,12 +115,12 @@ func getUserArrears(c *gin.Context) {
 		}
 		ret[strconv.Itoa(i)] = gin.H{
 			"id":          ar.ID,
-			"reader_id":   ar.readerID,
-			"book_id":     ar.bookID,
+			"reader_id":   ar.ReaderID,
+			"book_id":     ar.BookID,
 			"book_name":   book.Name,
 			"book_author": book.Author.Name,
-			"star":        ar.start,
-			"end":         ar.end,
+			"star":        ar.Start,
+			"end":         ar.End,
 		}
 	}
 
@@ -131,7 +132,7 @@ func getUserArrears(c *gin.Context) {
 // Запись книги на пользователя
 func newArear(c *gin.Context) {
 	log.Println("Gateway: New request for making new arrear")
-	var req NewReaderWithArrearRequestBody
+	var req clients.NewReaderWithArrearRequestBody
 	if err := c.ShouldBind(&req); err != nil {
 		log.Println("Gateway: Can't parse request body:", err.Error())
 		c.JSON(
@@ -144,7 +145,7 @@ func newArear(c *gin.Context) {
 	}
 	log.Println("Gateway: Reader name:", req.ReaderName, ", Book ID:", req.BookID)
 	log.Println("Gateway: Getting book by ID")
-	if _, err := BooksPartClient.getBookByID(req.BookID); err != nil {
+	if _, err := BooksPartClient.GetBookByID(req.BookID); err != nil {
 		log.Println("Gateway: Can't recieve book:", err.Error())
 		c.JSON(
 			http.StatusNotFound,
@@ -155,7 +156,7 @@ func newArear(c *gin.Context) {
 		return
 	}
 	log.Println("Gateway: Getting reader by name")
-	reader, err := ReadersPartClient.getReaderByName(req.ReaderName)
+	reader, err := ReadersPartClient.GetReaderByName(req.ReaderName)
 	if err != nil {
 		log.Println("Gateway: Can't recieve reader:", err.Error())
 		c.JSON(
@@ -167,7 +168,7 @@ func newArear(c *gin.Context) {
 		return
 	}
 	log.Println("Gateway: Changing arrear book status to NOT FREE")
-	err = BooksPartClient.changeBookStatusByID(req.BookID, false)
+	err = BooksPartClient.ChangeBookStatusByID(req.BookID, false)
 	if err != nil {
 		log.Println("Gateway: Can't change book status:", err.Error())
 		c.JSON(
@@ -179,7 +180,7 @@ func newArear(c *gin.Context) {
 		return
 	}
 	log.Println("Gateway: Making new arrear")
-	arrear, err := ArrearsPartClient.newArrear(reader.ID, req.BookID)
+	arrear, err := ArrearsPartClient.NewArrear(reader.ID, req.BookID)
 	if err != nil {
 		log.Println("Gateway: Can't register new arrear:", err.Error())
 		c.JSON(
@@ -195,10 +196,10 @@ func newArear(c *gin.Context) {
 		200,
 		gin.H{
 			"id":        arrear.ID,
-			"reader_id": arrear.readerID,
-			"book_id":   arrear.bookID,
-			"start":     arrear.start,
-			"end":       arrear.end,
+			"reader_id": arrear.ReaderID,
+			"book_id":   arrear.BookID,
+			"start":     arrear.Start,
+			"end":       arrear.End,
 		},
 	)
 }
@@ -221,7 +222,7 @@ func closeArrear(c *gin.Context) {
 	arrearID := int32(arrearID64)
 
 	log.Println("Gateway: Checking arrear for existanse by ID")
-	arrear, err := ArrearsPartClient.getArrearByID(arrearID)
+	arrear, err := ArrearsPartClient.GetArrearByID(arrearID)
 	if err != nil {
 		log.Println("Gateway: Error in getting arrear:", err.Error())
 		c.JSON(
@@ -233,7 +234,7 @@ func closeArrear(c *gin.Context) {
 		return
 	}
 	log.Println("Gateway: Closing arrear by ID")
-	err = ArrearsPartClient.closeArrearByID(arrearID)
+	err = ArrearsPartClient.CloseArrearByID(arrearID)
 	if err != nil {
 		log.Println("Gateway: Error in closing arrear:", err.Error())
 		c.JSON(
@@ -246,7 +247,7 @@ func closeArrear(c *gin.Context) {
 	}
 
 	log.Println("Gateway: Changing status of book from arrear to FREE")
-	err = BooksPartClient.changeBookStatusByID(arrear.bookID, true)
+	err = BooksPartClient.ChangeBookStatusByID(arrear.BookID, true)
 	if err != nil {
 		log.Println("Gateway: Can't change book status:", err.Error())
 		c.JSON(
@@ -257,7 +258,7 @@ func closeArrear(c *gin.Context) {
 		)
 		return
 	}
-	log.Println("Gateway: Request processed succesfully")
+	log.Println("Gateway: Request processed successfully")
 	c.JSON(
 		200,
 		gin.H{

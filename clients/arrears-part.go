@@ -1,4 +1,4 @@
-package main
+package clients
 
 import (
 	"context"
@@ -9,6 +9,13 @@ import (
 	"github.com/reijo1337/online-library-rsoi2/arrears-service/protocol"
 	"google.golang.org/grpc"
 )
+
+type ArrearsPartInterface interface {
+	GetArrearsPaging(userID int32, page int32, size int32) ([]Arrear, error)
+	NewArrear(readerID int32, bookID int32) (*Arrear, error)
+	GetArrearByID(ID int32) (*Arrear, error)
+	CloseArrearByID(ID int32) error
+}
 
 type ArrearsPart struct {
 	conn    *grpc.ClientConn
@@ -41,7 +48,7 @@ func NewArrearsPart() (*ArrearsPart, error) {
 	}, nil
 }
 
-func (ap *ArrearsPart) getArrearsPaging(userID int32, page int32, size int32) ([]Arrear, error) {
+func (ap *ArrearsPart) GetArrearsPaging(userID int32, page int32, size int32) ([]Arrear, error) {
 	log.Println("Arrear Client: Getting arrears with pagging. User ID:", userID, ", page:", page, ", page size:", size)
 	ctx := context.Background()
 	in := &protocol.PagingArrears{
@@ -69,15 +76,15 @@ func (ap *ArrearsPart) getArrearsPaging(userID int32, page int32, size int32) ([
 		arrears = append(arrears,
 			Arrear{
 				ID:       recvArrear.GetID(),
-				readerID: recvArrear.GetReaderID(),
-				bookID:   recvArrear.GetBookID(),
-				start:    recvArrear.GetStart(),
-				end:      recvArrear.GetEnd(),
+				ReaderID: recvArrear.GetReaderID(),
+				BookID:   recvArrear.GetBookID(),
+				Start:    recvArrear.GetStart(),
+				End:      recvArrear.GetEnd(),
 			})
 	}
 }
 
-func (ap *ArrearsPart) newArrear(readerID int32, bookID int32) (*Arrear, error) {
+func (ap *ArrearsPart) NewArrear(readerID int32, bookID int32) (*Arrear, error) {
 	log.Println("Arrear Client: Registering new arrear for reader with ID", readerID, "and book ID", bookID)
 	ctx := context.Background()
 
@@ -95,14 +102,14 @@ func (ap *ArrearsPart) newArrear(readerID int32, bookID int32) (*Arrear, error) 
 	log.Println("Arrear Client: Arrear registered successfully")
 	return &Arrear{
 		ID:       arrear.GetID(),
-		readerID: arrear.GetReaderID(),
-		bookID:   arrear.GetBookID(),
-		start:    arrear.GetStart(),
-		end:      arrear.GetEnd(),
+		ReaderID: arrear.GetReaderID(),
+		BookID:   arrear.GetBookID(),
+		Start:    arrear.GetStart(),
+		End:      arrear.GetEnd(),
 	}, nil
 }
 
-func (ap *ArrearsPart) getArrearByID(ID int32) (*Arrear, error) {
+func (ap *ArrearsPart) GetArrearByID(ID int32) (*Arrear, error) {
 	log.Println("Arrear Client: Getting arrear with ID", ID)
 	ctx := context.Background()
 
@@ -119,14 +126,14 @@ func (ap *ArrearsPart) getArrearByID(ID int32) (*Arrear, error) {
 	log.Println("Arrear Client: Arrear received successfully")
 	return &Arrear{
 		ID:       arrear.GetID(),
-		readerID: arrear.GetReaderID(),
-		bookID:   arrear.GetBookID(),
-		start:    arrear.GetStart(),
-		end:      arrear.GetEnd(),
+		ReaderID: arrear.GetReaderID(),
+		BookID:   arrear.GetBookID(),
+		Start:    arrear.GetStart(),
+		End:      arrear.GetEnd(),
 	}, nil
 }
 
-func (ap *ArrearsPart) closeArrearByID(ID int32) error {
+func (ap *ArrearsPart) CloseArrearByID(ID int32) error {
 	log.Println("Arrear Client: Close register with ID", ID)
 	ctx := context.Background()
 	req := &protocol.SomeArrearsID{ID: ID}

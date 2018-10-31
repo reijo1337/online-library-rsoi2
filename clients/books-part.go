@@ -1,4 +1,4 @@
-package main
+package clients
 
 import (
 	"context"
@@ -8,6 +8,12 @@ import (
 	"github.com/reijo1337/online-library-rsoi2/books-service/protocol"
 	"google.golang.org/grpc"
 )
+
+type BooksPartInterface interface {
+	AddNewBook(book Book) (int32, error)
+	GetBookByID(ID int32) (*Book, error)
+	ChangeBookStatusByID(ID int32, status bool) error
+}
 
 type BooksPart struct {
 	conn  *grpc.ClientConn
@@ -40,7 +46,7 @@ func NewBooksPart() (*BooksPart, error) {
 	}, nil
 }
 
-func (bp *BooksPart) addNewBook(book Book) (int32, error) {
+func (bp *BooksPart) AddNewBook(book Book) (int32, error) {
 	log.Println("Books Client: adding new book named", book.Name, "by", book.Author.Name)
 	ctx := context.Background()
 
@@ -60,7 +66,7 @@ func (bp *BooksPart) addNewBook(book Book) (int32, error) {
 	return id.ID, nil
 }
 
-func (bp *BooksPart) getBookByID(ID int32) (*Book, error) {
+func (bp *BooksPart) GetBookByID(ID int32) (*Book, error) {
 	log.Println("Books Client: Getting book with ID", ID)
 	ctx := context.Background()
 	bookID := &protocol.SomeID{ID: ID}
@@ -83,7 +89,7 @@ func (bp *BooksPart) getBookByID(ID int32) (*Book, error) {
 	}, nil
 }
 
-func (bp *BooksPart) changeBookStatusByID(ID int32, status bool) error {
+func (bp *BooksPart) ChangeBookStatusByID(ID int32, status bool) error {
 	log.Println("Books Client: Changing book status to", status, ". Book ID:", ID)
 	ctx := context.Background()
 	req := &protocol.ChangeStatus{
