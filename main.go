@@ -88,7 +88,7 @@ func getUserArrears(c *gin.Context) {
 		return
 	}
 
-	log.Println("Gateway: Getting arrears from remote service")
+	log.Println("Gateway: Getting arrears from remote service", reader.ID, pageInt, sizeInt)
 	arrears, err := ArrearsPartClient.GetArrearsPaging(reader.ID, pageInt, sizeInt)
 	if err != nil {
 		log.Println("Gateway: Error while getting arrears:", err.Error())
@@ -267,17 +267,23 @@ func closeArrear(c *gin.Context) {
 	)
 }
 
+func SetUpRouter() *gin.Engine {
+	r := gin.Default()
+
+	r.GET("/getUserArrears", getUserArrears)
+	r.POST("/newArear", newArear)
+	r.DELETE("/closeArrear", closeArrear)
+
+	return r
+}
+
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "5000"
 	}
 
-	r := gin.Default()
-
-	r.GET("/getUserArrears", getUserArrears)
-	r.POST("/newArear", newArear)
-	r.DELETE("/closeArrear", closeArrear)
+	r := SetUpRouter()
 
 	r.Run(":" + port)
 }
