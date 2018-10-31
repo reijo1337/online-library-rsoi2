@@ -60,6 +60,7 @@ func getUserArrears(c *gin.Context) {
 				"error": err.Error(),
 			},
 		)
+		return
 	}
 	pageInt := int32(page)
 	size, err := strconv.ParseInt(pageSize, 10, 32)
@@ -100,8 +101,8 @@ func getUserArrears(c *gin.Context) {
 		)
 		return
 	}
-	ret := gin.H{}
-	for i, ar := range arrears {
+	ret := []gin.H{}
+	for _, ar := range arrears {
 		book, err := BooksPartClient.GetBookByID(ar.BookID)
 		if err != nil {
 			log.Println("Gateway: Error while getting book by ID:", err.Error())
@@ -113,15 +114,15 @@ func getUserArrears(c *gin.Context) {
 			)
 			return
 		}
-		ret[strconv.Itoa(i)] = gin.H{
+		ret = append(ret, gin.H{
 			"id":          ar.ID,
 			"reader_id":   ar.ReaderID,
 			"book_id":     ar.BookID,
 			"book_name":   book.Name,
 			"book_author": book.Author.Name,
-			"star":        ar.Start,
+			"start":       ar.Start,
 			"end":         ar.End,
-		}
+		})
 	}
 
 	log.Println("Gateway: Request processed succesfully")
@@ -133,7 +134,8 @@ func getUserArrears(c *gin.Context) {
 func newArear(c *gin.Context) {
 	log.Println("Gateway: New request for making new arrear")
 	var req clients.NewReaderWithArrearRequestBody
-	if err := c.ShouldBind(&req); err != nil {
+
+	if err := c.BindJSON(&req); err != nil {
 		log.Println("Gateway: Can't parse request body:", err.Error())
 		c.JSON(
 			http.StatusBadRequest,
