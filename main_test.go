@@ -150,8 +150,7 @@ func TestUsersForBadResponsesFromServices(t *testing.T) {
 	assert.JSONEq(t, `{"error": "Reader not exists"}`, w.Body.String())
 
 	MockReadersPartClient.EXPECT().GetReaderByName(askedName).Return(
-		clients.Reader{ID: 1, Name: askedName}, nil,
-	).Times(1)
+		clients.Reader{ID: 1, Name: askedName}, nil).AnyTimes()
 	MockArrearsPartClient.EXPECT().GetArrearsPaging(int32(1), int32(1), int32(10)).Return(
 		nil, errors.New("Can't get arrears"),
 	).Times(1)
@@ -161,8 +160,6 @@ func TestUsersForBadResponsesFromServices(t *testing.T) {
 	assert.Equal(t, w.Code, http.StatusBadRequest)
 	assert.JSONEq(t, `{"error": "Can't get arrears"}`, w.Body.String())
 
-	MockReadersPartClient.EXPECT().GetReaderByName(askedName).Return(
-		clients.Reader{ID: 1, Name: askedName}, nil).Times(1)
 	MockArrearsPartClient.EXPECT().GetArrearsPaging(int32(1), int32(1), int32(10)).Return(
 		[]clients.Arrear{
 			clients.Arrear{
@@ -180,8 +177,7 @@ func TestUsersForBadResponsesFromServices(t *testing.T) {
 				End:      "end",
 			},
 		},
-		nil,
-	)
+		nil)
 	MockBooksPartClient.EXPECT().GetBookByID(int32(1)).Return(
 		nil, errors.New("There is no such book")).Times(1)
 	w = httptest.NewRecorder()
@@ -285,8 +281,7 @@ func TestIncorrectMakingNewArrear(t *testing.T) {
 
 	// Запись на несуществующего читателя
 	readerName := "Test Reader"
-	MockBooksPartClient.EXPECT().GetBookByID(bookID).Return(
-		nil, nil).Times(1)
+	MockBooksPartClient.EXPECT().GetBookByID(bookID).Return(nil, nil).AnyTimes()
 	MockReadersPartClient.EXPECT().GetReaderByName(readerName).Return(
 		clients.Reader{}, errors.New("There is no such reader")).Times(1)
 	postReq = clients.NewReaderWithArrearRequestBody{
@@ -303,10 +298,8 @@ func TestIncorrectMakingNewArrear(t *testing.T) {
 
 	// Книга уже занята
 	readerID := int32(1)
-	MockBooksPartClient.EXPECT().GetBookByID(bookID).Return(
-		nil, nil).Times(1)
 	MockReadersPartClient.EXPECT().GetReaderByName(readerName).Return(
-		clients.Reader{ID: readerID, Name: readerName}, nil).Times(1)
+		clients.Reader{ID: readerID, Name: readerName}, nil).AnyTimes()
 	MockBooksPartClient.EXPECT().ChangeBookStatusByID(bookID, false).Return(
 		errors.New("Can't change book status")).Times(1)
 	w = httptest.NewRecorder()
@@ -316,10 +309,6 @@ func TestIncorrectMakingNewArrear(t *testing.T) {
 	assert.JSONEq(t, `{"error": "Can't change book status"}`, w.Body.String())
 
 	// Проблемы при регистрации записи
-	MockBooksPartClient.EXPECT().GetBookByID(bookID).Return(
-		nil, nil).Times(1)
-	MockReadersPartClient.EXPECT().GetReaderByName(readerName).Return(
-		clients.Reader{ID: readerID, Name: readerName}, nil).Times(1)
 	MockBooksPartClient.EXPECT().ChangeBookStatusByID(bookID, false).Return(nil).Times(1)
 	MockArrearsPartClient.EXPECT().NewArrear(readerID, bookID).Return(
 		nil, errors.New("Can't register new arrear")).Times(1)
