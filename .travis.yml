@@ -1,0 +1,31 @@
+language: go
+go:
+- '1.11'
+sudo: true
+services:
+  - postgresql
+addons:
+  postgresql: "9.6"
+before_script:
+  - psql -c "create user rsoi with password 'password';" -U postgres
+  - psql -c 'create database arrears;' -U postgres
+  - psql -c 'create database books;' -U postgres
+  - psql -c 'create database readers;' -U postgres
+  - psql -c "GRANT ALL ON DATABASE arrears TO rsoi;" -U postgres
+  - psql -c "GRANT ALL ON DATABASE books TO rsoi;" -U postgres
+  - psql -c "GRANT ALL ON DATABASE readers TO rsoi;" -U postgres
+  - go get github.com/lib/pq
+  - go get google.golang.org/grpc
+  - go get github.com/gin-gonic/gin
+script:
+  - cd books-service
+  - go build
+  - cd ..
+  - cd readers-service
+  - go build
+  - cd ..
+  - cd arrears-service
+  - go build
+  - cd ..
+  - go build
+  - go test
