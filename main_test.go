@@ -246,3 +246,186 @@ func TestCorrectMakingNewArrear(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, respExp, respReal)
 }
+
+// TestIncorrectMakingNewArrear проверяет корректное выполнение запроса создания новой записи при некорректных параметрах запроса
+func TestIncorrectMakingNewArrear(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	MockBooksPartClient := mock_clients.NewMockBooksPartInterface(mockCtrl)
+	MockReadersPartClient := mock_clients.NewMockReadersPartInterface(mockCtrl)
+	MockArrearsPartClient := mock_clients.NewMockArrearsPartInterface(mockCtrl)
+
+	BooksPartClient = MockBooksPartClient
+	ArrearsPartClient = MockArrearsPartClient
+	ReadersPartClient = MockReadersPartClient
+
+	// Некорректное тело запроса
+	router := SetUpRouter()
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("POST", "/newArear", strings.NewReader("sas"))
+	router.ServeHTTP(w, req)
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+
+	// Запрашиваемая книга отсутсвтует
+	bookID := int32(1)
+	MockBooksPartClient.EXPECT().GetBookByID(bookID).Return(
+		nil, errors.New("There is no such book")).Times(1)
+	postReq := clients.NewReaderWithArrearRequestBody{
+		ReaderName: "doesn't matter",
+		BookID:     bookID,
+	}
+	w = httptest.NewRecorder()
+	postReqJSON, err := json.Marshal(&postReq)
+	assert.NoError(t, err)
+	req, _ = http.NewRequest("POST", "/newArear", strings.NewReader(string(postReqJSON)))
+	router.ServeHTTP(w, req)
+	assert.Equal(t, w.Code, http.StatusNotFound)
+	assert.JSONEq(t, `{"error": "There is no such book"}`, w.Body.String())
+
+	// Запись на несуществующего читателя
+	readerName := "Test Reader"
+	MockBooksPartClient.EXPECT().GetBookByID(bookID).Return(
+		nil, nil).Times(1)
+	MockReadersPartClient.EXPECT().GetReaderByName(readerName).Return(
+		clients.Reader{}, errors.New("There is no such reader")).Times(1)
+	postReq = clients.NewReaderWithArrearRequestBody{
+		ReaderName: readerName,
+		BookID:     bookID,
+	}
+	w = httptest.NewRecorder()
+	postReqJSON, err = json.Marshal(&postReq)
+	assert.NoError(t, err)
+	req, _ = http.NewRequest("POST", "/newArear", strings.NewReader(string(postReqJSON)))
+	router.ServeHTTP(w, req)
+	assert.Equal(t, w.Code, http.StatusNotFound)
+	assert.JSONEq(t, `{"error": "There is no such reader"}`, w.Body.String())
+
+	// Книга уже занята
+	readerID := int32(1)
+	MockBooksPartClient.EXPECT().GetBookByID(bookID).Return(
+		nil, nil).Times(1)
+	MockReadersPartClient.EXPECT().GetReaderByName(readerName).Return(
+		clients.Reader{ID: readerID, Name: readerName}, nil).Times(1)
+	MockBooksPartClient.EXPECT().ChangeBookStatusByID(bookID, false).Return(
+		errors.New("Can't change book status")).Times(1)
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("POST", "/newArear", strings.NewReader(string(postReqJSON)))
+	router.ServeHTTP(w, req)
+	assert.Equal(t, w.Code, http.StatusInternalServerError)
+	assert.JSONEq(t, `{"error": "Can't change book status"}`, w.Body.String())
+
+	// Проблемы при регистрации записи
+	MockBooksPartClient.EXPECT().GetBookByID(bookID).Return(
+		nil, nil).Times(1)
+	MockReadersPartClient.EXPECT().GetReaderByName(readerName).Return(
+		clients.Reader{ID: readerID, Name: readerName}, nil).Times(1)
+	MockBooksPartClient.EXPECT().ChangeBookStatusByID(bookID, false).Return(nil).Times(1)
+	MockArrearsPartClient.EXPECT().NewArrear(readerID, bookID).Return(
+		nil, errors.New("Can't register new arrear")).Times(1)
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("POST", "/newArear", strings.NewReader(string(postReqJSON)))
+	router.ServeHTTP(w, req)
+	assert.Equal(t, w.Code, http.StatusInternalServerError)
+	assert.JSONEq(t, `{"error": "Can't register new arrear"}`, w.Body.String())
+}
+
+// TestCorrectCloseArrear проверяет корректное выполнение запроса на возврат книги при корректных параметрах запроса
+func TestCorrectCloseArrear(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	MockBooksPartClient := mock_clients.NewMockBooksPartInterface(mockCtrl)
+	MockReadersPartClient := mock_clients.NewMockReadersPartInterface(mockCtrl)
+	MockArrearsPartClient := mock_clients.NewMockArrearsPartInterface(mockCtrl)
+
+	BooksPartClient = MockBooksPartClient
+	ArrearsPartClient = MockArrearsPartClient
+	ReadersPartClient = MockReadersPartClient
+
+	arrearID := int32(1)
+	readerID := int32(1)
+	bookID := int32(1)
+	arrearIDstring := fmt.Sprint(arrearID)
+	MockArrearsPartClient.EXPECT().GetArrearByID(arrearID).Return(
+		&clients.Arrear{
+			ID:       arrearID,
+			ReaderID: readerID,
+			BookID:   bookID,
+			Start:    "start",
+			End:      "end",
+		}, nil).Times(1)
+	MockArrearsPartClient.EXPECT().CloseArrearByID(arrearID).Return(nil).Times(1)
+	MockBooksPartClient.EXPECT().ChangeBookStatusByID(bookID, true).Return(nil).Times(1)
+
+	router := SetUpRouter()
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("DELETE", "/closeArrear?id="+arrearIDstring, nil)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, w.Code, http.StatusOK)
+	assert.JSONEq(t, `{"ok": "ok"}`, w.Body.String())
+}
+
+// TestIncorrectMakingNewArrear проверяет корректное выполнение запроса на возврат книги при некорректных параметрах запроса
+func TestIncorrectCloseArrear(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	MockBooksPartClient := mock_clients.NewMockBooksPartInterface(mockCtrl)
+	MockReadersPartClient := mock_clients.NewMockReadersPartInterface(mockCtrl)
+	MockArrearsPartClient := mock_clients.NewMockArrearsPartInterface(mockCtrl)
+
+	BooksPartClient = MockBooksPartClient
+	ArrearsPartClient = MockArrearsPartClient
+	ReadersPartClient = MockReadersPartClient
+
+	arrearID := int32(1)
+	readerID := int32(1)
+	bookID := int32(1)
+	arrearIDstring := fmt.Sprint(arrearID)
+	incorArrearIDstring := "sas"
+
+	// Некорректный ID записи
+	router := SetUpRouter()
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("DELETE", "/closeArrear?id="+incorArrearIDstring, nil)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+
+	// Удаляемая запись не существует
+	MockArrearsPartClient.EXPECT().GetArrearByID(arrearID).Return(nil, errors.New("There is no such arrear")).Times(1)
+	router = SetUpRouter()
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("DELETE", "/closeArrear?id="+arrearIDstring, nil)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, w.Code, http.StatusNotFound)
+	assert.JSONEq(t, `{"error": "There is no such arrear"}`, w.Body.String())
+
+	// Проблемы при закрытии записи
+	MockArrearsPartClient.EXPECT().GetArrearByID(arrearID).Return(
+		&clients.Arrear{
+			ID:       arrearID,
+			ReaderID: readerID,
+			BookID:   bookID,
+			Start:    "start",
+			End:      "end",
+		}, nil).AnyTimes()
+	MockArrearsPartClient.EXPECT().CloseArrearByID(arrearID).Return(
+		errors.New("Some error while closing arrear"))
+	router = SetUpRouter()
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("DELETE", "/closeArrear?id="+arrearIDstring, nil)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, w.Code, http.StatusInternalServerError)
+	assert.JSONEq(t, `{"error": "Some error while closing arrear"}`, w.Body.String())
+
+	// Проблемы при возврата книге статуса FREE
+	MockArrearsPartClient.EXPECT().CloseArrearByID(arrearID).Return(nil).AnyTimes()
+	MockBooksPartClient.EXPECT().ChangeBookStatusByID(bookID, true).Return(errors.New("Can't change book status"))
+	router = SetUpRouter()
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("DELETE", "/closeArrear?id="+arrearIDstring, nil)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, w.Code, http.StatusInternalServerError)
+	assert.JSONEq(t, `{"error": "Can't change book status"}`, w.Body.String())
+}
