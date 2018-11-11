@@ -1,4 +1,4 @@
-package main
+package clients
 
 // Writer описывает модель писателя, чьи книги есть в библиотеке
 type Writer struct {
@@ -22,10 +22,10 @@ type Reader struct {
 
 type Arrear struct {
 	ID       int32
-	readerID int32
-	bookID   int32
-	start    string
-	end      string
+	ReaderID int32
+	BookID   int32
+	Start    string
+	End      string
 }
 
 type NewReaderWithArrearRequestBody struct {

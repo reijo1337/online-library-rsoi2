@@ -11,12 +11,12 @@ import (
 func main() {
 	lis, err := net.Listen("tcp", ":8082")
 	if err != nil {
-		log.Fatalln("can't listet port", err)
+		log.Println("can't listet port", err)
 	}
 
 	serv, err := Server()
 	if err != nil {
-		log.Fatalln("can't  start server", err)
+		log.Println("can't  start server", err)
 	}
 
 	server := grpc.NewServer()
