@@ -271,7 +271,6 @@ func closeArrear(c *gin.Context) {
 
 func SetUpRouter() *gin.Engine {
 	r := gin.Default()
-
 	r.GET("/getUserArrears", getUserArrears)
 	r.POST("/newArear", newArear)
 	r.DELETE("/closeArrear", closeArrear)
