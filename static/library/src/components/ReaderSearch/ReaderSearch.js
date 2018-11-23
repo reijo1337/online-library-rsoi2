@@ -17,7 +17,7 @@ class ReaderSearch extends React.Component {
         this.url = "http://localhost:5000/getUserArrears";
     }
     render() {
-        const arrearsList = this.state.isLoaded ? <ArrearList arrears={this.arrears}/> : "";
+        const arrearsList = this.state.isLoaded && <ArrearList arrears={this.arrears} name={this.state.value}/>;
         return(
             <div>
                 <Form onSubmit={this.handleSubmit}>

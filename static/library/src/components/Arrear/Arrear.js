@@ -1,21 +1,25 @@
 import React, {Component} from "react"
 import "bootstrap/dist/css/bootstrap.css"
-import {Button} from "react-bootstrap"
+import {Button, Panel} from "react-bootstrap"
+import "../../tools"
+import {parse_date} from "../../tools";
 
 class Arrear extends Component{
-    constructor(props) {
-        super(props)
-    }
     render() {
         const {arrear} = this.props;
-        console.log(arrear);
-        const text = arrear.book_name + " от " + arrear.start + " до " + arrear.end;
+        const text = arrear.book_name + " от " + parse_date(arrear.start) + " до " + parse_date(arrear.end);
         return (
-            <div className="card">
+            <Panel>
                 {text}
-                <Button>Удалить</Button>
-            </div>
+                <Button onClick={this.handleDelete(arrear.id)}>
+                    Удалить
+                </Button>
+            </Panel>
         )
+    }
+    handleDelete = (data) => {
+        console.log(data);
+        this.props.handleDel(data);
     }
 }
 
