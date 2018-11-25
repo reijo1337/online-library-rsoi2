@@ -26,7 +26,7 @@ func SetUpDatabase() (*Database, error) {
 		return nil, err
 	}
 
-	db.SetMaxOpenConns(10)
+	db.SetMaxOpenConns(100)
 
 	log.Println("Creating schema")
 	if err := createSchema(db); err != nil {

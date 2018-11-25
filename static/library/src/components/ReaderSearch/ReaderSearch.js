@@ -51,32 +51,28 @@ class ReaderSearch extends React.Component {
 
     handleSubmit(event) {
         event.preventDefault();
+        this.setState({isLoaded: false});
         const url = this.url + "?name=" + this.state.value;
-        // const request = async () => {
-        //     const res = await fetch(url);
-        //     if (res.status === 200) {
-        //         this.arrears = await parse_json(res);
-        //         this.setState({ isLoaded: true });
-        //     } else {
-        //         alert("cant load arrears!");
-        //     }
-        // };
-        // request();
+
         fetch(url)
             .then( res => {
+                debugger;
                 if (res.status === 200) {
                     return parse_json(res);
                 } else {
-                    console.log(res);
-                    throw new Error();
+                    return res.json();
                 }
             })
             .then(json => {
+                if (json.error) {
+                    throw new Error(json.error);
+                }
                 this.arrears = json;
-                this.setState({ isLoaded: true });
+                this.setState({isLoaded: true});
+
             })
             .catch((error) => {
-                alert("Cant get arrears: " + error.toString());
+                alert("Cant get arrears: " + error.message);
             });
     }
 }

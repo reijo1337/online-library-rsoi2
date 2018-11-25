@@ -73,10 +73,13 @@ class ArrearsList extends Component {
                 if (res.status === 200) {
                     return parse_json(res);
                 } else {
-                    throw new Error();
+                    return res.json();
                 }
             })
             .then(json => {
+                if (json.error) {
+                    throw new Error(json.error);
+                }
                 if (json.length === 0) {
                     alert("В библиотеке закончились книги =(");
                 }
@@ -84,7 +87,7 @@ class ArrearsList extends Component {
                 this.setState({ show: true })
             })
             .catch((error) => {
-                alert("Cant get free books: " + error.toString());
+                alert("Cant get free books: " + error.message);
             });
     };
 

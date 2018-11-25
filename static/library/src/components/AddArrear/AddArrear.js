@@ -1,7 +1,7 @@
 import React, {Component} from "react"
-import {Panel, Button} from "react-bootstrap";
+import {Panel, Button} from "react-bootstrap"
 import  "bootstrap/dist/css/bootstrap.css"
-import {parse_json} from "../../tools";
+import {parse_json} from "../../tools"
 
 class AddArrear extends Component {
     constructor(props) {
@@ -98,14 +98,17 @@ class AddArrear extends Component {
                 if (res.status === 200) {
                     return parse_json(res);
                 } else {
-                    throw new Error();
+                    return res.json();
                 }
             })
             .then(json => {
+                if (json.error) {
+                    throw new Error(json.error);
+                }
                 this.props.hanldeAddArrear(json)
             })
             .catch((error) => {
-                alert("Cant make arrear: " + error.toString());
+                alert("Cant make arrear: " + error.message);
             });
     }
 }

@@ -2,7 +2,7 @@ import React, {Component} from "react"
 import "bootstrap/dist/css/bootstrap.css"
 import {Button, Panel} from "react-bootstrap"
 import "../../tools"
-import {parse_date, parse_json} from "../../tools";
+import {parse_date, parse_json} from "../../tools"
 
 class Arrear extends Component{
     constructor(props) {
@@ -36,15 +36,18 @@ class Arrear extends Component{
                 if (res.status === 200) {
                     return parse_json(res);
                 } else {
-                    throw new Error();
+                    return res.json();
                 }
             })
             .then(json => {
+                if (json.error) {
+                    throw new Error(json.error);
+                }
                 this.props.handleDel(this.arrear.id);
 
             })
             .catch((error) => {
-                alert("Cant make arrear: " + error.toString());
+                alert("Cant make arrear: " + error.message);
             });
     }
 }
