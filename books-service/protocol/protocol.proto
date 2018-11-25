@@ -43,4 +43,5 @@ service Books {
     rpc AddBook(BookInsert) returns (SomeID) {}
     rpc BookByID(SomeID) returns (Book) {}
     rpc ChangeBookStatusByID(ChangeStatus) returns (NothingBooks) {}
+    rpc FreeBooks(NothingBooks) returns (stream Book) {}
 }

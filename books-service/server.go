@@ -65,6 +65,20 @@ func (s *BooksServer) writersList() ([]*protocol.Writer, error) {
 	return ret, nil
 }
 
+func (s *BooksServer) freeBooksList() ([]*protocol.Book, error) {
+	books, err := s.db.getFreeBooks()
+	if err != nil {
+		return nil, err
+	}
+	ret := make([]*protocol.Book, len(books))
+	for _, book := range books {
+		writer := &protocol.Writer{ID: book.Author.ID, Name: book.Author.Name}
+		ret = append(ret, &protocol.Book{ID: book.ID, Name: book.Name, Author: writer, Free: book.Free})
+	}
+
+	return ret, nil
+}
+
 // AddBook добавление новой книги в библиотеку
 func (s *BooksServer) AddBook(ctx context.Context, bookInfo *protocol.BookInsert) (*protocol.SomeID, error) {
 	log.Println("Server: New request for inserting book named", bookInfo.BookName, "written by", bookInfo.AuthorName)
@@ -102,4 +116,25 @@ func (s *BooksServer) ChangeBookStatusByID(ctx context.Context, in *protocol.Cha
 		log.Println("Server: Request processed successfully")
 	}
 	return &protocol.NothingBooks{Dummy: changed}, err
+}
+
+// FreeBooks возвращает список свободных книг, т.е. книг, которые находядтся непостредственно в библиотеке
+func (s *BooksServer) FreeBooks(in *protocol.NothingBooks, p protocol.Books_FreeBooksServer) error {
+	log.Println("Server: New request for free book list")
+	books, err := s.freeBooksList()
+	if err != nil {
+		log.Println("Server: Can't process this request:", err.Error())
+		return err
+	}
+	for _, book := range books {
+		if book == nil {
+			continue
+		}
+		if err := p.Send(book); err != nil {
+			log.Println("Server: Can't send book:", err.Error())
+			return err
+		}
+	}
+	log.Println("Server: Request processed successfully")
+	return nil
 }

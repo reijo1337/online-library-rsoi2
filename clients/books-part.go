@@ -2,6 +2,7 @@ package clients
 
 import (
 	"context"
+	"io"
 	"log"
 	"os"
 
@@ -13,6 +14,7 @@ type BooksPartInterface interface {
 	AddNewBook(book Book) (int32, error)
 	GetBookByID(ID int32) (*Book, error)
 	ChangeBookStatusByID(ID int32, status bool) error
+	GetFreeBooks() ([]Book, error)
 }
 
 type BooksPart struct {
@@ -104,4 +106,37 @@ func (bp *BooksPart) ChangeBookStatusByID(ID int32, status bool) error {
 		log.Println("Books Client: Status changed succesfully")
 	}
 	return err
+}
+
+func (bp *BooksPart) GetFreeBooks() ([]Book, error) {
+	log.Println("Books Client: Getting free books")
+	ctx := context.Background()
+	in := &protocol.NothingBooks{}
+	booksServ, err := bp.books.FreeBooks(ctx, in)
+	if err != nil {
+		log.Println("Books Client: Can't recieve book")
+		return nil, err
+	}
+	var books []Book
+
+	for {
+		recvBook, err := booksServ.Recv()
+		if err == io.EOF {
+			log.Println("Arrear Client: All arrears recieved successfully")
+			return books, nil
+		} else if err != nil {
+			log.Println("Arrear Client: Can't receive arrear")
+			return nil, err
+		}
+		books = append(books,
+			Book{
+				ID:   recvBook.GetID(),
+				Name: recvBook.GetName(),
+				Free: recvBook.GetFree(),
+				Author: &Writer{
+					ID:   recvBook.Author.GetID(),
+					Name: recvBook.Author.GetName(),
+				},
+			})
+	}
 }

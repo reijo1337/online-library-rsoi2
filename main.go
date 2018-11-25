@@ -147,7 +147,8 @@ func newArear(c *gin.Context) {
 	}
 	log.Println("Gateway: Reader name:", req.ReaderName, ", Book ID:", req.BookID)
 	log.Println("Gateway: Getting book by ID")
-	if _, err := BooksPartClient.GetBookByID(req.BookID); err != nil {
+	book, err := BooksPartClient.GetBookByID(req.BookID)
+	if err != nil {
 		log.Println("Gateway: Can't recieve book:", err.Error())
 		c.JSON(
 			http.StatusNotFound,
@@ -197,11 +198,13 @@ func newArear(c *gin.Context) {
 	c.JSON(
 		200,
 		gin.H{
-			"id":        arrear.ID,
-			"reader_id": arrear.ReaderID,
-			"book_id":   arrear.BookID,
-			"start":     arrear.Start,
-			"end":       arrear.End,
+			"id":          arrear.ID,
+			"reader_id":   arrear.ReaderID,
+			"book_id":     arrear.BookID,
+			"start":       arrear.Start,
+			"end":         arrear.End,
+			"book_name":   book.Name,
+			"book_author": book.Author.Name,
 		},
 	)
 }
@@ -269,11 +272,47 @@ func closeArrear(c *gin.Context) {
 	)
 }
 
+// Список доступных книг
+func freeBooks(c *gin.Context) {
+	log.Println("Gateway: New request for free books")
+	log.Println("Gateway: Getting books from remote service")
+	books, err := BooksPartClient.GetFreeBooks()
+	if err != nil {
+		log.Println("Gateway: Error while getting free books:", err.Error())
+		c.JSON(
+			http.StatusBadRequest,
+			gin.H{
+				"error": err.Error(),
+			},
+		)
+		return
+	}
+	ret := []gin.H{}
+	for _, bk := range books {
+		ret = append(ret, gin.H{
+			"id":        bk.ID,
+			"name":      bk.Name,
+			"author":    bk.Author.Name,
+			"author_id": bk.Author.ID,
+		})
+	}
+
+	log.Println("Gateway: Request processed succesfully")
+	c.JSON(http.StatusOK, ret)
+}
+
 func SetUpRouter() *gin.Engine {
 	r := gin.Default()
 	r.GET("/getUserArrears", getUserArrears)
-	r.POST("/newArear", newArear)
-	r.DELETE("/closeArrear", closeArrear)
+	r.POST("/arrear", newArear)
+	r.DELETE("/arrear", closeArrear)
+	r.GET("/freeBooks", freeBooks)
+	r.OPTIONS("/arrear", func(c *gin.Context) {
+		c.JSON(http.StatusOK, "")
+	})
+	r.OPTIONS("/freeBooks", func(c *gin.Context) {
+		c.JSON(http.StatusOK, "")
+	})
 
 	return r
 }
