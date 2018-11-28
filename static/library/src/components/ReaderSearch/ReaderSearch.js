@@ -15,14 +15,25 @@ class ReaderSearch extends React.Component {
         this.handleChange = this.handleChange.bind(this);
         this.handleSubmit = this.handleSubmit.bind(this);
         this.url = "http://localhost:5000/getUserArrears";
+        this.regex = /\d/g;
     }
+
+    getValidationState = () => {
+        const hasNumber = this.regex.test(this.state.value);
+        const len = this.state.value.length;
+        if (hasNumber || len === 0) return 'error';
+        else return 'success';
+    };
+
     render() {
-        const arrearsList = this.state.isLoaded && <ArrearList arrears={this.arrears} name={this.state.value}/>;
+        const arrearsList = this.state.isLoaded &&
+            <ArrearList arrears={this.arrears} name={this.state.value}/>;
         return(
             <div>
                 <Form onSubmit={this.handleSubmit}>
                     <FormGroup
                         controlId="formBasicText"
+                        validationState={this.getValidationState()}
                     >
                         <FormControl
                             type="text"
@@ -35,6 +46,7 @@ class ReaderSearch extends React.Component {
                             block
                             bsSize="large"
                             type="submit"
+                            disabled={this.state.value === ''}
                         >
                             Поиск карточки читателя
                         </Button>
@@ -51,8 +63,13 @@ class ReaderSearch extends React.Component {
 
     handleSubmit(event) {
         event.preventDefault();
-        this.setState({isLoaded: false});
-        const url = this.url + "?name=" + this.state.value;
+        this.setState({ isLoaded: false }, () => {
+            this.loadArrears();
+        });
+    }
+
+    loadArrears = () => {
+        const url = this.url + "?name=" + this.state.value + "&page=1";
 
         fetch(url)
             .then( res => {
@@ -74,7 +91,7 @@ class ReaderSearch extends React.Component {
             .catch((error) => {
                 alert("Cant get arrears: " + error.message);
             });
-    }
+    };
 }
 
 export default ReaderSearch

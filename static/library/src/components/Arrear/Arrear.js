@@ -1,6 +1,6 @@
 import React, {Component} from "react"
 import "bootstrap/dist/css/bootstrap.css"
-import {Button, Panel} from "react-bootstrap"
+import {Button, Glyphicon, Panel} from "react-bootstrap"
 import "../../tools"
 import {parse_date, parse_json} from "../../tools"
 
@@ -13,13 +13,17 @@ class Arrear extends Component{
 
     }
     render() {
-        const text = this.arrear.book_name + " от " + parse_date(this.arrear.start) + " до " + parse_date(this.arrear.end);
+        const header = this.arrear.book_name + '. ' + this.arrear.book_author;
+        const text = "от " + parse_date(this.arrear.start) + " до " + parse_date(this.arrear.end);
         return (
             <Panel>
-                {text}
-                <Button onClick={this.handleDelete}>
-                    Удалить
-                </Button>
+                <Panel.Heading>
+                    <Panel.Title>{header}</Panel.Title>
+                </Panel.Heading>
+                    {text}
+                    <Button onClick={this.handleDelete}>
+                        <Glyphicon glyph="trash" />
+                    </Button>
             </Panel>
         )
     }

@@ -19,9 +19,7 @@ class AddArrear extends Component {
     render() {
         const bookName = this.books[this.state.selected_book_index].name;
         const author = this.books[this.state.selected_book_index].author;
-        const header = <h3>Запись книги {bookName}. Автор  {author} </h3>;
-
-
+        const header = <div>Запись книги {bookName}. Автор  {author}</div>;
 
         return (
             <div className="card">

@@ -47,7 +47,7 @@ func init() {
 // Запрос записанных на юзера книг по имени
 func getUserArrears(c *gin.Context) {
 	name := c.Query("name")
-	pageSize := c.DefaultQuery("size", "10")
+	pageSize := c.DefaultQuery("size", "5")
 	pageNumber := c.DefaultQuery("page", "1")
 	log.Println("Gateway: New request for arrears. Reader name", name, ", page:", pageNumber, ", size:", pageSize)
 	log.Println("Gateway: Converting strings to numbers")
@@ -81,7 +81,7 @@ func getUserArrears(c *gin.Context) {
 	if err != nil {
 		log.Println("Gateway: Error while getting reader by name:", err.Error())
 		c.JSON(
-			http.StatusNotFound,
+			http.StatusBadRequest,
 			gin.H{
 				"error": err.Error(),
 			},
@@ -107,7 +107,7 @@ func getUserArrears(c *gin.Context) {
 		if err != nil {
 			log.Println("Gateway: Error while getting book by ID:", err.Error())
 			c.JSON(
-				http.StatusNotFound,
+				http.StatusBadRequest,
 				gin.H{
 					"error": err.Error(),
 				},
@@ -151,7 +151,7 @@ func newArear(c *gin.Context) {
 	if err != nil {
 		log.Println("Gateway: Can't recieve book:", err.Error())
 		c.JSON(
-			http.StatusNotFound,
+			http.StatusBadRequest,
 			gin.H{
 				"error": err.Error(),
 			},
@@ -163,7 +163,7 @@ func newArear(c *gin.Context) {
 	if err != nil {
 		log.Println("Gateway: Can't recieve reader:", err.Error())
 		c.JSON(
-			http.StatusNotFound,
+			http.StatusBadRequest,
 			gin.H{
 				"error": err.Error(),
 			},
@@ -231,7 +231,7 @@ func closeArrear(c *gin.Context) {
 	if err != nil {
 		log.Println("Gateway: Error in getting arrear:", err.Error())
 		c.JSON(
-			http.StatusNotFound,
+			http.StatusBadRequest,
 			gin.H{
 				"error": err.Error(),
 			},

@@ -1,5 +1,5 @@
 import React, {Component} from "react"
-import {ListGroupItem, ListGroup, Well, Button} from "react-bootstrap"
+import {Pager, ListGroupItem, ListGroup, Well, Button} from "react-bootstrap"
 import Arrear from "../Arrear/Arrear"
 import AddArrear from "../AddArrear/AddArrear"
 import {parse_json} from "../../tools";
@@ -14,25 +14,42 @@ class ArrearsList extends Component {
         };
 
         this.url = "http://localhost:5000/freeBooks";
-        this.name = this.props.name
+        this.urlArrears = "http://localhost:5000/getUserArrears";
+        this.name = this.props.name;
+        this.page = 1;
     }
 
     render() {
+        debugger;
         const arrearsList = this.state.arrears.map(ar =>
             <ListGroupItem key={ar.id}>
                 <Arrear arrear={ar} handleDel={this.handleDelete}/>
             </ListGroupItem>
         );
+
         const addArrear = (this.state.show && this.books.length > 0) &&
-            <AddArrear
+            (<AddArrear
                 props={this.books}
                 hadleClose={this.handleClose}
                 hanldeAddArrear={this.handleAddArrear}
                 readerName={this.props.name}
-            />;
+            />);
+
+        const disabledNext = this.state.arrears.length !== 5;
+        const disabledPrev = this.page === 1;
+
+        const pager = (<Pager>
+            <Pager.Item disabled={disabledPrev} previous onClick={this.prevPage}>
+                &larr; Previous
+            </Pager.Item>
+            <Pager.Item disabled={disabledNext} next onClick={this.nextPage}>
+                Next &rarr;
+            </Pager.Item>
+        </Pager>);
+
         return (
             <div>
-                <Well bsSize="large">Книги записанные на {this.name}</Well>
+                <Well bsSize="small">Книги записанные на {this.name}</Well>
                 <Button
                     block
                     bsSize="large"
@@ -41,6 +58,7 @@ class ArrearsList extends Component {
                     Добавить новую запись
                 </Button>
                 {addArrear}
+                {pager}
                 <ListGroup>
                     {arrearsList}
                 </ListGroup>
@@ -49,16 +67,9 @@ class ArrearsList extends Component {
     }
 
     handleDelete = (id) => {
-        let index = -1;
-        let arrears = this.state.arrears;
-        arrears.forEach(
-            function(item, i, arr) {
-                if (item.id === id) {
-                    index = i;
-                }
-            });
-        arrears.splice(index, 1);
-        this.setState({arrears: arrears, show: false});
+        this.setState({show: false}, () => {
+            this.loadPage();
+        });
     };
 
     handleShow = () => {
@@ -96,13 +107,47 @@ class ArrearsList extends Component {
     };
 
     handleAddArrear = (arrear) => {
-        console.log(arrear);
-        let arrears = this.state.arrears;
-        arrears.push(arrear);
-        this.setState({
-            arrears: arrears,
-            show: false
+        this.setState({show: false}, () => {
+            this.loadPage();
         });
+    };
+
+    prevPage = () => {
+        this.page = this.page > 1 ? this.page - 1 : this.page;
+        this.setState({ show: false }, () => {
+            this.loadPage();
+        });
+    };
+
+    nextPage = () => {
+        this.page += 1;
+        this.setState({ show: false }, () => {
+            this.loadPage();
+        });
+    };
+
+    loadPage = () => {
+        const url = this.urlArrears + "?name=" + this.name + "&page=" + this.page;
+        fetch(url)
+            .then( res => {
+                if (res.status === 200) {
+                    return parse_json(res);
+                } else {
+                    return res.json();
+                }
+            })
+            .then(json => {
+                if (json.error) {
+                    throw new Error(json.error);
+                }
+                debugger;
+                let arrear = json;
+                this.setState({arrears: arrear});
+
+            })
+            .catch((error) => {
+                alert("Cant get arrears: " + error.message);
+            });
     }
 }
 
