@@ -83,7 +83,7 @@ func getUserArrears(c *gin.Context) {
 		c.JSON(
 			http.StatusBadRequest,
 			gin.H{
-				"error": err.Error(),
+				"error": "Нет возможности узнать, записан ли " + name + " в библиотеке",
 			},
 		)
 		return
@@ -96,7 +96,7 @@ func getUserArrears(c *gin.Context) {
 		c.JSON(
 			http.StatusBadRequest,
 			gin.H{
-				"error": err.Error(),
+				"error": "Нет возможности получить информацию про книги, записанные на " + name,
 			},
 		)
 		return
@@ -109,7 +109,7 @@ func getUserArrears(c *gin.Context) {
 			c.JSON(
 				http.StatusBadRequest,
 				gin.H{
-					"error": err.Error(),
+					"error": "Нет возможности получить информацию про книги, записанные на " + name,
 				},
 			)
 			return
@@ -140,7 +140,7 @@ func newArear(c *gin.Context) {
 		c.JSON(
 			http.StatusBadRequest,
 			gin.H{
-				"error": err.Error(),
+				"error": "Пробелмы с обработкой запроса",
 			},
 		)
 		return
@@ -153,7 +153,7 @@ func newArear(c *gin.Context) {
 		c.JSON(
 			http.StatusBadRequest,
 			gin.H{
-				"error": err.Error(),
+				"error": "Проблема с записью данной книги, возможно ее уже забрали.",
 			},
 		)
 		return
@@ -165,7 +165,7 @@ func newArear(c *gin.Context) {
 		c.JSON(
 			http.StatusBadRequest,
 			gin.H{
-				"error": err.Error(),
+				"error": "Нет возможности узнать, записан ли " + req.ReaderName + " в библиотеке",
 			},
 		)
 		return
@@ -177,7 +177,7 @@ func newArear(c *gin.Context) {
 		c.JSON(
 			http.StatusInternalServerError,
 			gin.H{
-				"error": err.Error(),
+				"error": "Проблемы с резервированием книги",
 			},
 		)
 		return
@@ -189,7 +189,7 @@ func newArear(c *gin.Context) {
 		c.JSON(
 			http.StatusInternalServerError,
 			gin.H{
-				"error": err.Error(),
+				"error": "Проблемы с записью книги. Попробуйте повторить запрос позже",
 			},
 		)
 		return
@@ -219,7 +219,7 @@ func closeArrear(c *gin.Context) {
 		c.JSON(
 			http.StatusBadRequest,
 			gin.H{
-				"error": err.Error(),
+				"error": "Некорректно задан номер записи",
 			},
 		)
 		return
@@ -233,7 +233,7 @@ func closeArrear(c *gin.Context) {
 		c.JSON(
 			http.StatusBadRequest,
 			gin.H{
-				"error": err.Error(),
+				"error": "Нет возможности получить информацию о записи",
 			},
 		)
 		return
@@ -245,7 +245,7 @@ func closeArrear(c *gin.Context) {
 		c.JSON(
 			http.StatusInternalServerError,
 			gin.H{
-				"error": err.Error(),
+				"error": "Проблема с закрытием записи",
 			},
 		)
 		return
@@ -258,7 +258,7 @@ func closeArrear(c *gin.Context) {
 		c.JSON(
 			http.StatusInternalServerError,
 			gin.H{
-				"error": err.Error(),
+				"error": "Проблема с закрытием записи",
 			},
 		)
 		return
@@ -282,7 +282,7 @@ func freeBooks(c *gin.Context) {
 		c.JSON(
 			http.StatusBadRequest,
 			gin.H{
-				"error": err.Error(),
+				"error": "Проблемы с получением списка доступных книг",
 			},
 		)
 		return
