@@ -57,7 +57,7 @@ func getUserArrears(c *gin.Context) {
 		c.JSON(
 			http.StatusBadRequest,
 			gin.H{
-				"error": err.Error(),
+				"error": "Некорректно задан номер страницы",
 			},
 		)
 		return
@@ -69,7 +69,7 @@ func getUserArrears(c *gin.Context) {
 		c.JSON(
 			http.StatusBadRequest,
 			gin.H{
-				"error": err.Error(),
+				"error": "Некорректно задан размер страницы",
 			},
 		)
 		return
