@@ -47,7 +47,7 @@ func init() {
 // Запрос записанных на юзера книг по имени
 func getUserArrears(c *gin.Context) {
 	name := c.Query("name")
-	pageSize := c.DefaultQuery("size", "10")
+	pageSize := c.DefaultQuery("size", "5")
 	pageNumber := c.DefaultQuery("page", "1")
 	log.Println("Gateway: New request for arrears. Reader name", name, ", page:", pageNumber, ", size:", pageSize)
 	log.Println("Gateway: Converting strings to numbers")
@@ -57,7 +57,7 @@ func getUserArrears(c *gin.Context) {
 		c.JSON(
 			http.StatusBadRequest,
 			gin.H{
-				"error": err.Error(),
+				"error": "Некорректно задан номер страницы",
 			},
 		)
 		return
@@ -69,7 +69,7 @@ func getUserArrears(c *gin.Context) {
 		c.JSON(
 			http.StatusBadRequest,
 			gin.H{
-				"error": err.Error(),
+				"error": "Некорректно задан размер страницы",
 			},
 		)
 		return
@@ -81,9 +81,9 @@ func getUserArrears(c *gin.Context) {
 	if err != nil {
 		log.Println("Gateway: Error while getting reader by name:", err.Error())
 		c.JSON(
-			http.StatusNotFound,
+			http.StatusBadRequest,
 			gin.H{
-				"error": err.Error(),
+				"error": "Нет возможности узнать, записан ли " + name + " в библиотеке",
 			},
 		)
 		return
@@ -96,7 +96,7 @@ func getUserArrears(c *gin.Context) {
 		c.JSON(
 			http.StatusBadRequest,
 			gin.H{
-				"error": err.Error(),
+				"error": "Нет возможности получить информацию про книги, записанные на " + name,
 			},
 		)
 		return
@@ -107,9 +107,9 @@ func getUserArrears(c *gin.Context) {
 		if err != nil {
 			log.Println("Gateway: Error while getting book by ID:", err.Error())
 			c.JSON(
-				http.StatusNotFound,
+				http.StatusBadRequest,
 				gin.H{
-					"error": err.Error(),
+					"error": "Нет возможности получить информацию про книги, записанные на " + name,
 				},
 			)
 			return
@@ -140,19 +140,20 @@ func newArear(c *gin.Context) {
 		c.JSON(
 			http.StatusBadRequest,
 			gin.H{
-				"error": err.Error(),
+				"error": "Пробелмы с обработкой запроса",
 			},
 		)
 		return
 	}
 	log.Println("Gateway: Reader name:", req.ReaderName, ", Book ID:", req.BookID)
 	log.Println("Gateway: Getting book by ID")
-	if _, err := BooksPartClient.GetBookByID(req.BookID); err != nil {
+	book, err := BooksPartClient.GetBookByID(req.BookID)
+	if err != nil {
 		log.Println("Gateway: Can't recieve book:", err.Error())
 		c.JSON(
-			http.StatusNotFound,
+			http.StatusBadRequest,
 			gin.H{
-				"error": err.Error(),
+				"error": "Проблема с записью данной книги, возможно ее уже забрали.",
 			},
 		)
 		return
@@ -162,9 +163,9 @@ func newArear(c *gin.Context) {
 	if err != nil {
 		log.Println("Gateway: Can't recieve reader:", err.Error())
 		c.JSON(
-			http.StatusNotFound,
+			http.StatusBadRequest,
 			gin.H{
-				"error": err.Error(),
+				"error": "Нет возможности узнать, записан ли " + req.ReaderName + " в библиотеке",
 			},
 		)
 		return
@@ -176,7 +177,7 @@ func newArear(c *gin.Context) {
 		c.JSON(
 			http.StatusInternalServerError,
 			gin.H{
-				"error": err.Error(),
+				"error": "Проблемы с резервированием книги",
 			},
 		)
 		return
@@ -188,7 +189,7 @@ func newArear(c *gin.Context) {
 		c.JSON(
 			http.StatusInternalServerError,
 			gin.H{
-				"error": err.Error(),
+				"error": "Проблемы с записью книги. Попробуйте повторить запрос позже",
 			},
 		)
 		return
@@ -197,11 +198,13 @@ func newArear(c *gin.Context) {
 	c.JSON(
 		200,
 		gin.H{
-			"id":        arrear.ID,
-			"reader_id": arrear.ReaderID,
-			"book_id":   arrear.BookID,
-			"start":     arrear.Start,
-			"end":       arrear.End,
+			"id":          arrear.ID,
+			"reader_id":   arrear.ReaderID,
+			"book_id":     arrear.BookID,
+			"start":       arrear.Start,
+			"end":         arrear.End,
+			"book_name":   book.Name,
+			"book_author": book.Author.Name,
 		},
 	)
 }
@@ -216,7 +219,7 @@ func closeArrear(c *gin.Context) {
 		c.JSON(
 			http.StatusBadRequest,
 			gin.H{
-				"error": err.Error(),
+				"error": "Некорректно задан номер записи",
 			},
 		)
 		return
@@ -228,9 +231,9 @@ func closeArrear(c *gin.Context) {
 	if err != nil {
 		log.Println("Gateway: Error in getting arrear:", err.Error())
 		c.JSON(
-			http.StatusNotFound,
+			http.StatusBadRequest,
 			gin.H{
-				"error": err.Error(),
+				"error": "Нет возможности получить информацию о записи",
 			},
 		)
 		return
@@ -242,7 +245,7 @@ func closeArrear(c *gin.Context) {
 		c.JSON(
 			http.StatusInternalServerError,
 			gin.H{
-				"error": err.Error(),
+				"error": "Проблема с закрытием записи",
 			},
 		)
 		return
@@ -255,7 +258,7 @@ func closeArrear(c *gin.Context) {
 		c.JSON(
 			http.StatusInternalServerError,
 			gin.H{
-				"error": err.Error(),
+				"error": "Проблема с закрытием записи",
 			},
 		)
 		return
@@ -269,12 +272,47 @@ func closeArrear(c *gin.Context) {
 	)
 }
 
+// Список доступных книг
+func freeBooks(c *gin.Context) {
+	log.Println("Gateway: New request for free books")
+	log.Println("Gateway: Getting books from remote service")
+	books, err := BooksPartClient.GetFreeBooks()
+	if err != nil {
+		log.Println("Gateway: Error while getting free books:", err.Error())
+		c.JSON(
+			http.StatusBadRequest,
+			gin.H{
+				"error": "Проблемы с получением списка доступных книг",
+			},
+		)
+		return
+	}
+	ret := []gin.H{}
+	for _, bk := range books {
+		ret = append(ret, gin.H{
+			"id":        bk.ID,
+			"name":      bk.Name,
+			"author":    bk.Author.Name,
+			"author_id": bk.Author.ID,
+		})
+	}
+
+	log.Println("Gateway: Request processed succesfully")
+	c.JSON(http.StatusOK, ret)
+}
+
 func SetUpRouter() *gin.Engine {
 	r := gin.Default()
-
 	r.GET("/getUserArrears", getUserArrears)
-	r.POST("/newArear", newArear)
-	r.DELETE("/closeArrear", closeArrear)
+	r.POST("/arrear", newArear)
+	r.DELETE("/arrear", closeArrear)
+	r.GET("/freeBooks", freeBooks)
+	r.OPTIONS("/arrear", func(c *gin.Context) {
+		c.JSON(http.StatusOK, "")
+	})
+	r.OPTIONS("/freeBooks", func(c *gin.Context) {
+		c.JSON(http.StatusOK, "")
+	})
 
 	return r
 }

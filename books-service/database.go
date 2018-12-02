@@ -27,7 +27,7 @@ func SetUpDatabase() (*Database, error) {
 		return nil, err
 	}
 
-	db.SetMaxOpenConns(10)
+	db.SetMaxOpenConns(100)
 
 	log.Println("Creating schema")
 	if err := createSchema(db); err != nil {
@@ -315,4 +315,31 @@ func (db *Database) changeStatusBookByID(ID int32, status bool) (bool, error) {
 	}
 	log.Println("DB: Book status changed successfully")
 	return true, nil
+}
+
+func (db *Database) getFreeBooks() ([]*Book, error) {
+	log.Println("DB: Getting all writers")
+	resultBooks := make([]*Book, 0)
+	rows, err := db.Query("SELECT * FROM books WHERE free = TRUE")
+
+	if err != nil {
+		return nil, err
+	}
+	for rows.Next() {
+		currentBookRow := &Book{}
+		var writerID int32
+		writer := &Writer{}
+		rows.Scan(&currentBookRow.ID, &writerID, &currentBookRow.Name, &currentBookRow.Free)
+		err = db.QueryRow("SELECT * FROM writers WHERE id = $1", writerID).Scan(
+			&writer.ID, &writer.Name)
+		if err != nil {
+			return nil, err
+		}
+
+		currentBookRow.Author = writer
+
+		resultBooks = append(resultBooks, currentBookRow)
+	}
+	log.Println("DB: books received succesfully", resultBooks)
+	return resultBooks, nil
 }

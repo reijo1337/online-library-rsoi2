@@ -24,7 +24,7 @@ func SetUpDatabase() (*Database, error) {
 	if err != nil {
 		return nil, err
 	}
-	db.SetMaxOpenConns(10)
+	db.SetMaxOpenConns(100)
 
 	log.Println("Creating schema")
 	if err := createSchema(db); err != nil {
@@ -33,10 +33,10 @@ func SetUpDatabase() (*Database, error) {
 
 	ddb := &Database{DB: db}
 
-	log.Println("DB: Setting up start data")
-	if err := setUpStartData(ddb); err != nil {
-		return nil, err
-	}
+	// log.Println("DB: Setting up start data")
+	// if err := setUpStartData(ddb); err != nil {
+	// 	return nil, err
+	// }
 
 	log.Println("DB: succesful setup")
 	return ddb, nil
@@ -94,8 +94,8 @@ func (db *Database) GetArrearsPaggin(userID int32, size int32, page int32) ([]*A
 	if err != nil {
 		return nil, err
 	}
-	currentArrear := &Arrear{}
 	for row.Next() {
+		currentArrear := &Arrear{}
 		row.Scan(&currentArrear.ID, &currentArrear.readerID, &currentArrear.bookID, &currentArrear.start, &currentArrear.end)
 		resultArrears = append(resultArrears, currentArrear)
 	}
