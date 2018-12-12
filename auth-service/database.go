@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"crypto/sha256"
 	"database/sql"
 	"fmt"
@@ -48,8 +47,8 @@ func createSchema(db *sql.DB) error {
 	if _, err := db.Exec(`
 		CREATE TABLE IF NOT EXISTS users (
 			id SERIAL NOT NULL PRIMARY KEY,
-			login VARCHAR(20) NOT NULL,
-			passhash VARCHAR(64) NOT NULL
+			login VARCHAR(20) UNIQUE NOT NULL,
+			passhash VARCHAR(70) NOT NULL
 		)`); err != nil {
 		return err
 	}
@@ -83,9 +82,25 @@ func (db *Database) InsertNewUser(login string, password string) (*User, error) 
 	passHash := sha256.New()
 	passHash.Write([]byte(password))
 	pass := passHash.Sum(nil)
+	passStr := fmt.Sprintf("%x\n", pass)
+
+	rows, err := db.Query("SELECT id FROM users WHERE login = $1", login)
+
+	if err != nil {
+		return nil, err
+	}
+
 	var ID int32
-	row := db.QueryRow("INSERT INTO auth (login, passhash) VALUES ($1, $2,) RETURNING id",
-		login, string(pass))
+	for rows.Next() {
+		rows.Scan(&ID)
+	}
+
+	if ID > 0 {
+		return &User{ID: ID, Login: login, Password: password}, nil
+	}
+
+	row := db.QueryRow("INSERT INTO users (login, passhash) VALUES ($1, $2) RETURNING id",
+		login, passStr)
 	if err := row.Scan(&ID); err != nil {
 		return nil, err
 	}
@@ -103,12 +118,14 @@ func (db *Database) IsAuthorized(user *User) bool {
 		passhash string
 	)
 
-	err := db.QueryRow("SELECT passhash FROM auth WHERE login = $1", user.Login).Scan(
+	err := db.QueryRow("SELECT passhash FROM users WHERE login = $1", user.Login).Scan(
 		&passhash)
 	if err != nil {
 		return false
 	}
 	passHash := sha256.New()
 	passHash.Write([]byte(user.Password))
-	return bytes.Equal(passHash.Sum(nil), []byte(passhash))
+	pass := passHash.Sum(nil)
+	passStr := fmt.Sprintf("%x\n", pass)
+	return passhash == passStr
 }

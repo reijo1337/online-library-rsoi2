@@ -32,3 +32,13 @@ type NewReaderWithArrearRequestBody struct {
 	ReaderName string `json:"reader"`
 	BookID     int32  `json:"book"`
 }
+
+type User struct {
+	Login    string `json:"login"`
+	Password string `json:"password"`
+}
+
+type Tokens struct {
+	AccessToken  string `json:"accessToken"`
+	RefreshToken string `json:"refreshToken"`
+}
