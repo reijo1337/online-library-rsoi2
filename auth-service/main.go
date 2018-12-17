@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -56,6 +57,49 @@ func getToken(c *gin.Context) {
 
 }
 
+func refreshToken(c *gin.Context) {
+	log.Println("Server: Request refresh")
+	tokenString := c.Query("refresh_token")
+	if tokenString == "" {
+		c.AbortWithStatus(http.StatusBadRequest)
+	}
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		// hmacSampleSecret := os.Getenv("SECRET")
+		hmacSampleSecret := []byte("secc")
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
+		}
+
+		return hmacSampleSecret, nil
+	})
+
+	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+		newTokens, err := genToken(claims["login"].(string))
+		if err != nil {
+			log.Println("Server: Can't authorize this user: ", err.Error())
+			c.JSON(
+				http.StatusUnauthorized,
+				gin.H{
+					"error": "Неудачная авторизация",
+				},
+			)
+			return
+		}
+		c.JSON(
+			http.StatusOK,
+			newTokens,
+		)
+	} else {
+		log.Println("Gateway: Authorization failed: ", err.Error())
+		c.AbortWithStatusJSON(
+			http.StatusUnauthorized,
+			gin.H{
+				"error": "Неудачная авторизация",
+			},
+		)
+	}
+}
+
 func main() {
 	db, err := SetUpDatabase()
 	if err != nil {
@@ -64,6 +108,7 @@ func main() {
 	DB = db
 	r := gin.Default()
 	r.POST("/", getToken)
+	r.GET("/", refreshToken)
 	r.Run(":8084")
 }
 
@@ -71,7 +116,6 @@ func genToken(login string) (*Tokens, error) {
 	log.Println("Server: Generating token")
 	// hmacSampleSecret := os.Getenv("SECRET")
 	hmacSampleSecret := []byte("secc")
-	log.Println(hmacSampleSecret)
 	AccessTokenExp := time.Now().Add(time.Minute * 30).Unix()
 	RefreshTokenExp := time.Now().Add(time.Hour * 30).Unix()
 	log.Println("Server: Gen access token")

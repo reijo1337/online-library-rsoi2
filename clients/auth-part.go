@@ -12,6 +12,7 @@ import (
 
 type AuthPartInterface interface {
 	GetToken(user *User) (*Tokens, error)
+	RefreshToken(refreshToken string) (*Tokens, error)
 }
 
 type AuthPart struct {
@@ -21,6 +22,7 @@ type AuthPart struct {
 func NewAuthPart() (*AuthPart, error) {
 	log.Println("Auth Client: Setting new authorization client")
 	authURL := os.Getenv("AUTH")
+	authURL = "http://127.0.0.1:8084"
 	return &AuthPart{
 		url: authURL,
 	}, nil
@@ -34,17 +36,15 @@ func (ap *AuthPart) GetToken(user *User) (*Tokens, error) {
 		return nil, err
 	}
 	log.Println(string(jsonStr))
-	// req, err := http.NewRequest("POST", ap.url, bytes.NewBuffer(jsonStr))
-	// req.Header.Set("X-Custom-Header", "myvalue")
-	// req.Header.Set("Content-Type", "application/json")
+	req, err := http.NewRequest("POST", ap.url, bytes.NewBuffer(jsonStr))
+	req.Header.Set("Content-Type", "application/json")
 
-	// client := &http.Client{}
-	// resp, err := client.Do(req)
-	// if err != nil {
-	// 	log.Println("Auth Client: Can't send request: ", err.Error())
-	// 	return nil, err
-	// }
-	resp, err := http.Post(ap.url, "application/json", bytes.NewBuffer(jsonStr))
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Println("Auth Client: Can't send request: ", err.Error())
+		return nil, err
+	}
 	if err != nil {
 		log.Println("Auth Client: Can't send request: ", err.Error())
 		return nil, err
@@ -55,7 +55,26 @@ func (ap *AuthPart) GetToken(user *User) (*Tokens, error) {
 	fmt.Println("response Headers:", resp.Header)
 	body, _ := ioutil.ReadAll(resp.Body)
 	fmt.Println("response Body:", string(body))
-	var tokens *Tokens
+	tokens := &Tokens{}
+	if err = json.Unmarshal(body, tokens); err != nil {
+		log.Println("Auth Client: Can't Unmarshal response: ", err.Error())
+		return nil, err
+	}
+	return tokens, nil
+}
+
+func (ap *AuthPart) RefreshToken(RefreshToken string) (*Tokens, error) {
+	log.Println("Auth Client: Request for refresh token")
+	resp, err := http.Get(ap.url + "?refresh_token=" + RefreshToken)
+	if err != nil {
+		log.Println("Auth Client: Can't reshresh token: ", err.Error())
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	body, _ := ioutil.ReadAll(resp.Body)
+	fmt.Println("response Body:", string(body))
+	tokens := &Tokens{}
 	if err = json.Unmarshal(body, tokens); err != nil {
 		log.Println("Auth Client: Can't Unmarshal response: ", err.Error())
 		return nil, err
