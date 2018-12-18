@@ -1,8 +1,8 @@
 import React, {Component} from "react"
-import ReaderSearch from "./ReaderSearch/ReaderSearch"
-import {PageHeader, } from "react-bootstrap"
+import ReaderSearch from "../ReaderSearch/ReaderSearch";
+import {PageHeader} from "react-bootstrap"
 
-class App extends Component{
+class MainPage extends Component{
     render() {
         return (
             <div>
@@ -11,8 +11,8 @@ class App extends Component{
                 </PageHeader>
                 <ReaderSearch/>
             </div>
-        )
+        );
     }
 }
 
-export default App
+export default MainPage

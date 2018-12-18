@@ -81,8 +81,8 @@ class AddArrear extends Component {
             reader: this.props.readerName,
             book: this.state.selected_book_id,
         });
-
-        fetch(this.url, {
+        const token = localStorage.getItem("accessToken");
+        fetch(this.url + "?access_token="+token, {
             method: "post",
             headers: {
                 'Accept': 'application/json',

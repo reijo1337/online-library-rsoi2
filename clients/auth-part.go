@@ -3,6 +3,7 @@ package clients
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -52,9 +53,13 @@ func (ap *AuthPart) GetToken(user *User) (*Tokens, error) {
 	defer resp.Body.Close()
 
 	fmt.Println("response Status:", resp.Status)
-	fmt.Println("response Headers:", resp.Header)
 	body, _ := ioutil.ReadAll(resp.Body)
 	fmt.Println("response Body:", string(body))
+	if resp.StatusCode != http.StatusOK {
+		errMsg := &ErrorMessage{}
+		json.Unmarshal(body, errMsg)
+		return nil, errors.New(errMsg.Error)
+	}
 	tokens := &Tokens{}
 	if err = json.Unmarshal(body, tokens); err != nil {
 		log.Println("Auth Client: Can't Unmarshal response: ", err.Error())

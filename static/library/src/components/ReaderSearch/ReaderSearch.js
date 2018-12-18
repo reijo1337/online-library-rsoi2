@@ -69,8 +69,8 @@ class ReaderSearch extends React.Component {
     }
 
     loadArrears = () => {
-        const url = this.url + "?name=" + this.state.value + "&page=1";
-
+        const token = localStorage.getItem("accessToken");
+        const url = this.url + "?name=" + this.state.value + "&page=1&access_token="+token;
         fetch(url)
             .then( res => {
                 debugger;

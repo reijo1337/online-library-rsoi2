@@ -314,7 +314,7 @@ func freeBooks(c *gin.Context) {
 func AuthRequired() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		log.Println("Gateway: New authorized request")
-		tokenString := c.GetHeader("Authorization")
+		tokenString := c.Query("access_token")
 		if tokenString == "" {
 			c.AbortWithStatusJSON(
 				http.StatusUnauthorized,
@@ -369,9 +369,10 @@ func Login(c *gin.Context) {
 		c.AbortWithStatusJSON(
 			http.StatusUnauthorized,
 			gin.H{
-				"error": "Unauthorized",
+				"error": "Неудачная попытка авторизации",
 			},
 		)
+		return
 	}
 	c.JSON(
 		http.StatusOK,
