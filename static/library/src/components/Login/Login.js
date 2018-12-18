@@ -1,26 +1,40 @@
 import React, {Component} from "react"
 import {FormControl, FormGroup, ControlLabel, Button, Jumbotron} from "react-bootstrap"
-import {parse_json} from "../../tools";
+import {parse_json, updater} from "../../tools";
+import jwtDecode from "jwt-decode";
 
 class Login extends Component {
     constructor(props) {
         super(props);
-        const login = localStorage.getItem("login");
-        console.log(login);
-        if (login === "" || login === null) {
+        this.url = "http://localhost:5000/auth";
+        const token = localStorage.getItem("accessToken");
+        if (token === null || token === "") {
             this.state = {
                 login: '',
                 password: '',
                 authorized: false,
             };
+            return
+        }
+        let tokenData = jwtDecode(token);
+        let interval = (tokenData.exp - (Date.now().valueOf() / 1000))-10;
+        if (interval < 0) {
+            localStorage.setItem("accessToken", "");
+            localStorage.setItem("refreshToken", "");
+            localStorage.setItem("login", "");
+            this.state = {
+                login: '',
+                password: '',
+                authorized: false,
+            }
         } else {
+            const login = localStorage.getItem("login");
             this.state = {
                 login: login,
                 password: '',
                 authorized: true,
             };
         }
-        this.url = "http://localhost:5000/auth";
     }
 
     render() {
@@ -82,7 +96,7 @@ class Login extends Component {
             login: login,
             password: password,
         });
-
+        debugger;
         fetch(this.url, {
             method: "post",
             headers: {
@@ -105,12 +119,18 @@ class Login extends Component {
                 localStorage.setItem("accessToken", json.accessToken);
                 localStorage.setItem("refreshToken", json.refreshToken);
                 localStorage.setItem("login", this.state.login);
+                clearInterval(this._tokenUpdater);
+                const token = json.accessToken;
+                let tokenData = jwtDecode(token);
+                let interval = (tokenData.exp - (Date.now().valueOf() / 1000))-10;
+
+                this._tokenUpdater = setInterval(updater.bind(this),interval*1000);
                 this.setState({authorized: true})
             })
             .catch((error) => {
                 alert("Проблемы с доступом в джойказино: " + error.message);
             });
-    }
+    };
 }
 
 export default Login

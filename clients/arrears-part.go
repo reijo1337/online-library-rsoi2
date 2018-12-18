@@ -50,6 +50,8 @@ func NewArrearsPart() (*ArrearsPart, error) {
 
 func (ap *ArrearsPart) GetArrearsPaging(userID int32, page int32, size int32) ([]Arrear, error) {
 	log.Println("Arrear Client: Getting arrears with pagging. User ID:", userID, ", page:", page, ", page size:", size)
+	// header := metadata.New(map[string]string{"Authorization": secrets.AppKey + ":" + secrets.ArrearsSecret})
+	// ctx := metadata.NewOutgoingContext(context.Background(), header)
 	ctx := context.Background()
 	in := &protocol.PagingArrears{
 		ID:   userID,
@@ -86,6 +88,8 @@ func (ap *ArrearsPart) GetArrearsPaging(userID int32, page int32, size int32) ([
 
 func (ap *ArrearsPart) NewArrear(readerID int32, bookID int32) (*Arrear, error) {
 	log.Println("Arrear Client: Registering new arrear for reader with ID", readerID, "and book ID", bookID)
+	// header := metadata.New(map[string]string{"Authorization": secrets.AppKey + ":" + secrets.ArrearsSecret})
+	// ctx := metadata.NewOutgoingContext(context.Background(), header)
 	ctx := context.Background()
 
 	newArrearReq := &protocol.NewArrear{
@@ -111,6 +115,8 @@ func (ap *ArrearsPart) NewArrear(readerID int32, bookID int32) (*Arrear, error) 
 
 func (ap *ArrearsPart) GetArrearByID(ID int32) (*Arrear, error) {
 	log.Println("Arrear Client: Getting arrear with ID", ID)
+	// header := metadata.New(map[string]string{"Authorization": secrets.AppKey + ":" + secrets.ArrearsSecret})
+	// ctx := metadata.NewOutgoingContext(context.Background(), header)
 	ctx := context.Background()
 
 	arrearID := &protocol.SomeArrearsID{
@@ -135,6 +141,8 @@ func (ap *ArrearsPart) GetArrearByID(ID int32) (*Arrear, error) {
 
 func (ap *ArrearsPart) CloseArrearByID(ID int32) error {
 	log.Println("Arrear Client: Close register with ID", ID)
+	// header := metadata.New(map[string]string{"Authorization": secrets.AppKey + ":" + secrets.ArrearsSecret})
+	// ctx := metadata.NewOutgoingContext(context.Background(), header)
 	ctx := context.Background()
 	req := &protocol.SomeArrearsID{ID: ID}
 	_, err := ap.arrears.DeleteArrearByID(ctx, req)

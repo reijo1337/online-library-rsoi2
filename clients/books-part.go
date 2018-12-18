@@ -2,9 +2,16 @@ package clients
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"log"
 	"os"
+	"time"
+
+	"google.golang.org/grpc/metadata"
+
+	jwt "github.com/dgrijalva/jwt-go"
+	"github.com/reijo1337/online-library-rsoi2/secrets"
 
 	"github.com/reijo1337/online-library-rsoi2/books-service/protocol"
 	"google.golang.org/grpc"
@@ -20,6 +27,7 @@ type BooksPartInterface interface {
 type BooksPart struct {
 	conn  *grpc.ClientConn
 	books protocol.BooksClient
+	token string
 }
 
 func NewBooksPart() (*BooksPart, error) {
@@ -42,15 +50,33 @@ func NewBooksPart() (*BooksPart, error) {
 
 	books := protocol.NewBooksClient(grpcConn)
 	log.Println("Books Client: success!")
-	return &BooksPart{
+
+	log.Println("Books Client: Getting access token")
+	token, err := Auth(books)
+	if err != nil {
+		log.Println("Books Client: Can't authorize")
+		return nil, err
+	}
+
+	bp := &BooksPart{
 		conn:  grpcConn,
 		books: books,
-	}, nil
+		token: token,
+	}
+
+	go WaithAndRefresh(bp)
+
+	return bp, nil
+}
+
+func (bp *BooksPart) Context() context.Context {
+	header := metadata.New(map[string]string{"authorization": bp.token})
+	return metadata.NewOutgoingContext(context.Background(), header)
 }
 
 func (bp *BooksPart) AddNewBook(book Book) (int32, error) {
 	log.Println("Books Client: adding new book named", book.Name, "by", book.Author.Name)
-	ctx := context.Background()
+	ctx := bp.Context()
 
 	insertBookRequest := &protocol.BookInsert{
 		BookName:   book.Name,
@@ -70,7 +96,7 @@ func (bp *BooksPart) AddNewBook(book Book) (int32, error) {
 
 func (bp *BooksPart) GetBookByID(ID int32) (*Book, error) {
 	log.Println("Books Client: Getting book with ID", ID)
-	ctx := context.Background()
+	ctx := bp.Context()
 	bookID := &protocol.SomeID{ID: ID}
 
 	book, err := bp.books.BookByID(ctx, bookID)
@@ -93,7 +119,7 @@ func (bp *BooksPart) GetBookByID(ID int32) (*Book, error) {
 
 func (bp *BooksPart) ChangeBookStatusByID(ID int32, status bool) error {
 	log.Println("Books Client: Changing book status to", status, ". Book ID:", ID)
-	ctx := context.Background()
+	ctx := bp.Context()
 	req := &protocol.ChangeStatus{
 		BookID:    ID,
 		NewStatus: status,
@@ -110,7 +136,7 @@ func (bp *BooksPart) ChangeBookStatusByID(ID int32, status bool) error {
 
 func (bp *BooksPart) GetFreeBooks() ([]Book, error) {
 	log.Println("Books Client: Getting free books")
-	ctx := context.Background()
+	ctx := bp.Context()
 	in := &protocol.NothingBooks{}
 	booksServ, err := bp.books.FreeBooks(ctx, in)
 	if err != nil {
@@ -139,4 +165,42 @@ func (bp *BooksPart) GetFreeBooks() ([]Book, error) {
 				},
 			})
 	}
+}
+
+func Auth(books protocol.BooksClient) (string, error) {
+	log.Println("Books Client: Getting authorization")
+
+	ctx := context.Background()
+	request := &protocol.AuthRequest{
+		AppKey:    secrets.AppKey,
+		AppSecret: secrets.BooksSecret,
+	}
+	log.Println("Books Client: Sending request for authorization")
+	token, err := books.Auth(ctx, request)
+	if err != nil {
+		log.Println("Books Client: Can't authorize: ", err.Error())
+		return "", err
+	}
+
+	return token.GetString_(), nil
+}
+
+func WaithAndRefresh(bp *BooksPart) {
+	tokenString := bp.token
+	token, _ := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
+		}
+		return []byte(secrets.BooksSecret), nil
+	})
+
+	claims, _ := token.Claims.(jwt.MapClaims)
+	endTime := int64(claims["exp"].(float64))
+	startTime := time.Now().Unix()
+	seconsd := int(endTime - startTime)
+	time.Sleep(time.Duration(seconsd) * time.Second)
+
+	newToken, _ := Auth(bp.books)
+	bp.token = newToken
+	go WaithAndRefresh(bp)
 }

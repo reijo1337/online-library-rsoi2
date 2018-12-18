@@ -51,9 +51,6 @@ class AddArrear extends Component {
                 <select onChange={this.handleBookSelect} id='s1' className="form-control">
                     {bookssList}
                 </select>
-                {/*<h4> Выберете срок </h4>*/}
-                {/*С <input type="date" className="card-group" id='startDate'/>*/}
-                {/*По <input type="date" className="card-group" id='endDate'/>*/}
             </div>
         );
     };
@@ -75,8 +72,6 @@ class AddArrear extends Component {
     };
 
     handleAddArrear = () => {
-        // const start = document.getElementById('startDate').value;
-        // const end = document.getElementById('endDate').value;
         const data = JSON.stringify({
             reader: this.props.readerName,
             book: this.state.selected_book_id,

@@ -9,11 +9,12 @@ const ROUTES = [
 ];
 
 class App extends Component{
-    constructor() {
-        super();
+    constructor(props) {
+        super(props);
         this.state = {
             route: 0
         };
+
     }
 
     render() {
