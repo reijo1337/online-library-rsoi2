@@ -116,8 +116,8 @@ func genToken(login string) (*Tokens, error) {
 	log.Println("Server: Generating token")
 	// hmacSampleSecret := os.Getenv("SECRET")
 	hmacSampleSecret := []byte("secc")
-	AccessTokenExp := time.Now().Add(time.Minute * 30).Unix()
-	RefreshTokenExp := time.Now().Add(time.Hour * 30).Unix()
+	AccessTokenExp := time.Now().Add(time.Second * 30).Unix()
+	RefreshTokenExp := time.Now().Add(time.Hour * 24).Unix()
 	log.Println("Server: Gen access token")
 	accesToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"login": login,

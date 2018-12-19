@@ -17,7 +17,8 @@ export function parse_date(date) {
 }
 
 export function updater() {
-    const token = localStorage.getItem("refreshToken")
+    const token = localStorage.getItem("refreshToken");
+    console.log("refresh");
     const url = "http://localhost:5000/auth?refresh_token="+token;
     fetch(url)
         .then( res => {
@@ -43,5 +44,8 @@ export function updater() {
         })
         .catch((error) => {
             alert("Cant refresh token: " + error.message);
+            localStorage.setItem("accessToken", "");
+            localStorage.setItem("refreshToken", "");
+            localStorage.setItem("login", "");
         });
 }
