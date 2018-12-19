@@ -2,11 +2,15 @@ package main
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"log"
 	"strconv"
 	"time"
 
+	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/reijo1337/online-library-rsoi2/arrears-service/protocol"
+	"google.golang.org/grpc/metadata"
 )
 
 type ArrearServer struct {
@@ -20,6 +24,32 @@ func Server() (*ArrearServer, error) {
 		return nil, err
 	}
 	return &ArrearServer{db: db}, nil
+}
+
+func isAuthorized(ctx context.Context) bool {
+	headers, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return ok
+	}
+
+	tokenString := headers["authorization"][0]
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
+		}
+
+		return []byte(Secret), nil
+	})
+
+	if err != nil {
+		return false
+	}
+
+	if _, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+		return true
+	} else {
+		return false
+	}
 }
 
 func (as *ArrearServer) GetPagedReadersArrears(in *protocol.PagingArrears, p protocol.Arrears_GetPagedReadersArrearsServer) error {
@@ -112,4 +142,34 @@ func parseDate(t time.Time) string {
 	}
 
 	return year + month + day
+}
+
+func (s *ArrearServer) Auth(ctx context.Context, in *protocol.AuthRequest) (*protocol.SomeString, error) {
+	log.Println("Server: New authorization")
+	if ContainsKey(in.AppKey) && (in.AppSecret == Secret) {
+		token, err := genToken(in.AppKey)
+		return &protocol.SomeString{String_: token}, err
+	}
+	return nil, errors.New("Unauthorized")
+}
+
+func genToken(login string) (string, error) {
+	log.Println("Server: Generating token")
+	hmacSampleSecret := []byte(Secret)
+	AccessTokenExp := time.Now().Add(time.Minute * 30).Unix()
+	log.Println("Server: Gen access token")
+	accesToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"iss": "BookService",
+		"exp": AccessTokenExp,
+		"aud": login,
+	})
+
+	log.Println("Server: Signing access token", accesToken, hmacSampleSecret)
+	accessTokenString, err := accesToken.SignedString(hmacSampleSecret)
+	if err != nil {
+		log.Println("Server: Can't authorize: ", err.Error())
+		return "", err
+	}
+
+	return accessTokenString, nil
 }

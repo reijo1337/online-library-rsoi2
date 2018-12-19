@@ -1,11 +1,13 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"strconv"
 
+	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	"github.com/reijo1337/online-library-rsoi2/clients"
 )
@@ -14,6 +16,7 @@ var (
 	BooksPartClient   clients.BooksPartInterface
 	ReadersPartClient clients.ReadersPartInterface
 	ArrearsPartClient clients.ArrearsPartInterface
+	AuthPartClient    clients.AuthPartInterface
 )
 
 func init() {
@@ -36,9 +39,16 @@ func init() {
 		panic(err)
 	}
 
+	aupc, err := clients.NewAuthPart()
+	if err != nil {
+		log.Println("Initing arrears part error")
+		panic(err)
+	}
+
 	BooksPartClient = bpc
 	ReadersPartClient = rpc
 	ArrearsPartClient = apc
+	AuthPartClient = aupc
 }
 
 // 5. Должен быть хотя бы один запрос, требующий данных с нескольких сервисов.
@@ -301,18 +311,112 @@ func freeBooks(c *gin.Context) {
 	c.JSON(http.StatusOK, ret)
 }
 
+func AuthRequired() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		log.Println("Gateway: New authorized request")
+		tokenString := c.Query("access_token")
+		if tokenString == "" {
+			c.AbortWithStatusJSON(
+				http.StatusUnauthorized,
+				gin.H{
+					"error": "Unauthorized",
+				},
+			)
+		}
+		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+			// hmacSampleSecret := os.Getenv("SECRET")
+			hmacSampleSecret := []byte("secc")
+			// Don't forget to validate the alg is what you expect:
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
+			}
+
+			// hmacSampleSecret is a []byte containing your secret, e.g. []byte("my_secret_key")
+			return hmacSampleSecret, nil
+		})
+
+		if _, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+			c.Next()
+		} else {
+			log.Println("Gateway: Authorization failed: ", err.Error())
+			c.AbortWithStatusJSON(
+				http.StatusUnauthorized,
+				gin.H{
+					"error": "Unauthorized",
+				},
+			)
+		}
+	}
+}
+
+func Login(c *gin.Context) {
+	log.Println("Gateway: New request for login")
+	req := &clients.User{}
+	if err := c.BindJSON(req); err != nil {
+		log.Println("Gateway: Can't parse request body:", err.Error())
+		log.Println(req)
+		c.AbortWithStatusJSON(
+			http.StatusBadRequest,
+			gin.H{
+				"error": "Пробелмы с обработкой запроса",
+			},
+		)
+	}
+
+	tokens, err := AuthPartClient.GetToken(req)
+	if err != nil {
+		log.Println("Gateway: Login failed: ", err.Error())
+		c.AbortWithStatusJSON(
+			http.StatusUnauthorized,
+			gin.H{
+				"error": "Неудачная попытка авторизации",
+			},
+		)
+		return
+	}
+	c.JSON(
+		http.StatusOK,
+		tokens,
+	)
+}
+
+func Refresh(c *gin.Context) {
+	log.Println("Gateway: New request for refresh token")
+	tokens, err := AuthPartClient.RefreshToken(c.Query("refresh_token"))
+	if err != nil {
+		log.Println("Gateway: Login failed: ", err.Error())
+		c.AbortWithStatusJSON(
+			http.StatusBadRequest,
+			gin.H{
+				"error": "Unauthorized",
+			},
+		)
+	}
+	c.JSON(
+		http.StatusOK,
+		tokens,
+	)
+}
+
 func SetUpRouter() *gin.Engine {
 	r := gin.Default()
-	r.GET("/getUserArrears", getUserArrears)
-	r.POST("/arrear", newArear)
-	r.DELETE("/arrear", closeArrear)
-	r.GET("/freeBooks", freeBooks)
-	r.OPTIONS("/arrear", func(c *gin.Context) {
+	authorized := r.Group("/", AuthRequired())
+	authorized.GET("/getUserArrears", getUserArrears)
+	authorized.POST("/arrear", newArear)
+	authorized.DELETE("/arrear", closeArrear)
+	authorized.GET("/freeBooks", freeBooks)
+	authorized.OPTIONS("/arrear", func(c *gin.Context) {
 		c.JSON(http.StatusOK, "")
 	})
-	r.OPTIONS("/freeBooks", func(c *gin.Context) {
+	authorized.OPTIONS("/freeBooks", func(c *gin.Context) {
 		c.JSON(http.StatusOK, "")
 	})
+
+	r.POST("/auth", Login)
+	r.OPTIONS("/auth", func(c *gin.Context) {
+		c.JSON(http.StatusOK, "")
+	})
+	r.GET("/auth", Refresh)
 
 	return r
 }

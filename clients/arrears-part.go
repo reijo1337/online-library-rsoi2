@@ -2,11 +2,15 @@ package clients
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"log"
 	"os"
+	"time"
 
+	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/reijo1337/online-library-rsoi2/arrears-service/protocol"
+	"github.com/reijo1337/online-library-rsoi2/secrets"
 	"google.golang.org/grpc"
 )
 
@@ -20,6 +24,7 @@ type ArrearsPartInterface interface {
 type ArrearsPart struct {
 	conn    *grpc.ClientConn
 	arrears protocol.ArrearsClient
+	token   string
 }
 
 func NewArrearsPart() (*ArrearsPart, error) {
@@ -42,14 +47,29 @@ func NewArrearsPart() (*ArrearsPart, error) {
 
 	arrears := protocol.NewArrearsClient(grpcConn)
 	log.Println("Arrear Client: success!")
-	return &ArrearsPart{
+
+	log.Println("Arrear Client: Getting access token")
+	token, err := AuthA(arrears)
+	if err != nil {
+		log.Println("Books Client: Can't authorize")
+		return nil, err
+	}
+
+	as := &ArrearsPart{
 		conn:    grpcConn,
 		arrears: arrears,
-	}, nil
+		token:   token,
+	}
+
+	go WaithAndRefreshA(as)
+
+	return as, nil
 }
 
 func (ap *ArrearsPart) GetArrearsPaging(userID int32, page int32, size int32) ([]Arrear, error) {
 	log.Println("Arrear Client: Getting arrears with pagging. User ID:", userID, ", page:", page, ", page size:", size)
+	// header := metadata.New(map[string]string{"Authorization": secrets.AppKey + ":" + secrets.ArrearsSecret})
+	// ctx := metadata.NewOutgoingContext(context.Background(), header)
 	ctx := context.Background()
 	in := &protocol.PagingArrears{
 		ID:   userID,
@@ -86,6 +106,8 @@ func (ap *ArrearsPart) GetArrearsPaging(userID int32, page int32, size int32) ([
 
 func (ap *ArrearsPart) NewArrear(readerID int32, bookID int32) (*Arrear, error) {
 	log.Println("Arrear Client: Registering new arrear for reader with ID", readerID, "and book ID", bookID)
+	// header := metadata.New(map[string]string{"Authorization": secrets.AppKey + ":" + secrets.ArrearsSecret})
+	// ctx := metadata.NewOutgoingContext(context.Background(), header)
 	ctx := context.Background()
 
 	newArrearReq := &protocol.NewArrear{
@@ -111,6 +133,8 @@ func (ap *ArrearsPart) NewArrear(readerID int32, bookID int32) (*Arrear, error) 
 
 func (ap *ArrearsPart) GetArrearByID(ID int32) (*Arrear, error) {
 	log.Println("Arrear Client: Getting arrear with ID", ID)
+	// header := metadata.New(map[string]string{"Authorization": secrets.AppKey + ":" + secrets.ArrearsSecret})
+	// ctx := metadata.NewOutgoingContext(context.Background(), header)
 	ctx := context.Background()
 
 	arrearID := &protocol.SomeArrearsID{
@@ -135,6 +159,8 @@ func (ap *ArrearsPart) GetArrearByID(ID int32) (*Arrear, error) {
 
 func (ap *ArrearsPart) CloseArrearByID(ID int32) error {
 	log.Println("Arrear Client: Close register with ID", ID)
+	// header := metadata.New(map[string]string{"Authorization": secrets.AppKey + ":" + secrets.ArrearsSecret})
+	// ctx := metadata.NewOutgoingContext(context.Background(), header)
 	ctx := context.Background()
 	req := &protocol.SomeArrearsID{ID: ID}
 	_, err := ap.arrears.DeleteArrearByID(ctx, req)
@@ -144,4 +170,42 @@ func (ap *ArrearsPart) CloseArrearByID(ID int32) error {
 		log.Println("Arrear Client: Arrear closed succesfully")
 	}
 	return err
+}
+
+func AuthA(books protocol.ArrearsClient) (string, error) {
+	log.Println("Books Client: Getting authorization")
+
+	ctx := context.Background()
+	request := &protocol.AuthRequest{
+		AppKey:    secrets.AppKey,
+		AppSecret: secrets.BooksSecret,
+	}
+	log.Println("Books Client: Sending request for authorization")
+	token, err := books.Auth(ctx, request)
+	if err != nil {
+		log.Println("Books Client: Can't authorize: ", err.Error())
+		return "", err
+	}
+
+	return token.GetString_(), nil
+}
+
+func WaithAndRefreshA(bp *ArrearsPart) {
+	tokenString := bp.token
+	token, _ := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
+		}
+		return []byte(secrets.BooksSecret), nil
+	})
+
+	claims, _ := token.Claims.(jwt.MapClaims)
+	endTime := int64(claims["exp"].(float64))
+	startTime := time.Now().Unix()
+	seconsd := int(endTime - startTime)
+	time.Sleep(time.Duration(seconsd) * time.Second)
+
+	newToken, _ := AuthA(bp.arrears)
+	bp.token = newToken
+	go WaithAndRefreshA(bp)
 }

@@ -28,10 +28,19 @@ message SomeArrearsID{
 message NothingArrear {
     bool Dummy = 1;
 }
+message AuthRequest {
+    string AppKey = 1;
+    string AppSecret = 2;
+}
+
+message SomeString {
+    string String = 1;
+}
 
 service Arrears {
     rpc GetPagedReadersArrears (PagingArrears) returns (stream Arrear) {}
     rpc RegisterNewArrear(NewArrear) returns (Arrear) {}
     rpc GetArrearByID(SomeArrearsID) returns (Arrear) {}
     rpc DeleteArrearByID(SomeArrearsID) returns (NothingArrear) {}
+    rpc Auth(AuthRequest) returns (SomeString) {}
 }

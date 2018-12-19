@@ -37,6 +37,15 @@ message ChangeStatus {
     bool NewStatus = 2;
 }
 
+message AuthRequest {
+    string AppKey = 1;
+    string AppSecret = 2;
+}
+
+message SomeString {
+    string String = 1;
+}
+
 service Books {
     rpc Authors (NothingBooks) returns (stream Writer) {}
     rpc BookByAuthorAndName (WriterBookName) returns (Book) {}
@@ -44,4 +53,5 @@ service Books {
     rpc BookByID(SomeID) returns (Book) {}
     rpc ChangeBookStatusByID(ChangeStatus) returns (NothingBooks) {}
     rpc FreeBooks(NothingBooks) returns (stream Book) {}
+    rpc Auth(AuthRequest) returns (SomeString) {}
 }

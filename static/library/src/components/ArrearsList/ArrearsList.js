@@ -73,7 +73,8 @@ class ArrearsList extends Component {
     };
 
     handleShow = () => {
-        fetch(this.url, {
+        const token = localStorage.getItem("accessToken");
+        fetch(this.url + "?access_token="+token, {
             method: "get",
             headers: {
                 'Accept': 'application/json',
@@ -127,7 +128,8 @@ class ArrearsList extends Component {
     };
 
     loadPage = () => {
-        const url = this.urlArrears + "?name=" + this.name + "&page=" + this.page;
+        const token = localStorage.getItem("accessToken");
+        const url = this.urlArrears + "?name=" + this.name + "&page=" + this.page + "&access_token="+token;
         fetch(url)
             .then( res => {
                 if (res.status === 200) {

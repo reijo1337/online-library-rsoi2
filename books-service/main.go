@@ -25,5 +25,4 @@ func main() {
 	protocol.RegisterBooksServer(server, serv)
 	log.Println("starting server at :8081")
 	server.Serve(lis)
-
 }

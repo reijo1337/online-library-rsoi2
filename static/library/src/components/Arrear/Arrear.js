@@ -28,8 +28,8 @@ class Arrear extends Component{
         )
     }
     handleDelete = () => {
-        console.log("DELETING ARREAR");
-        fetch(this.url + "?id=" + String(this.arrear.id), {
+        const token = localStorage.getItem("accessToken");
+        fetch(this.url + "?id=" + String(this.arrear.id) + "&access_token="+token, {
             method: "delete",
             headers: {
                 'Accept': 'application/json',
