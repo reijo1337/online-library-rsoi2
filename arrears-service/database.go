@@ -122,6 +122,38 @@ func (db *Database) InsertNewArrear(readerID int32, bookID int32, startTime stri
 	}, nil
 }
 
+func (db *Database) InsertFullArrear(ID int32, readerID int32, bookID int32, startTime string, endTime string) (*Arrear, error) {
+	log.Println("DB: Inserting new arrear with", readerID, "reader id and ", bookID, "book id for period [", startTime, ";", endTime, "]")
+
+	rows, err := db.Query("SELECT * FROM arrears WHERE id = $1", ID)
+
+	if err != nil {
+		log.Println("DB: Can't check arrear for already exist:", err.Error())
+		return nil, err
+	}
+
+	ar := &Arrear{ID: int32(-1)}
+	for rows.Next() {
+		rows.Scan(&ar.ID, &ar.readerID, &ar.bookID, &ar.start, &ar.end)
+	}
+
+	if ID > 0 {
+		log.Println("DB: There is already arrear with this ID")
+		return ar, nil
+	}
+	db.QueryRow("INSERT INTO arrears (id, reader_id, book_id, start_date, end_date) VALUES ($1, $2, $3, $4)",
+		ID, readerID, bookID, startTime, endTime)
+
+	log.Println("DB: arrear inserted succesfully")
+	return &Arrear{
+		ID:       ID,
+		readerID: readerID,
+		bookID:   bookID,
+		start:    startTime,
+		end:      endTime,
+	}, nil
+}
+
 func (db *Database) GetArrearByID(ID int32) (*Arrear, error) {
 	log.Println("DB: Getting arrear with ID", ID)
 	var (

@@ -19,6 +19,7 @@ type ArrearsPartInterface interface {
 	NewArrear(readerID int32, bookID int32) (*Arrear, error)
 	GetArrearByID(ID int32) (*Arrear, error)
 	CloseArrearByID(ID int32) error
+	NewFullArrear(in *Arrear) error
 }
 
 type ArrearsPart struct {
@@ -129,6 +130,25 @@ func (ap *ArrearsPart) NewArrear(readerID int32, bookID int32) (*Arrear, error) 
 		Start:    arrear.GetStart(),
 		End:      arrear.GetEnd(),
 	}, nil
+}
+
+func (ap *ArrearsPart) NewFullArrear(in *Arrear) error {
+	ctx := context.Background()
+	newArrearReq := &protocol.Arrear{
+		ID:       in.ID,
+		ReaderID: in.ReaderID,
+		BookID:   in.BookID,
+		Start:    in.Start,
+		End:      in.End,
+	}
+	_, err := ap.arrears.RegisterFullArrear(ctx, newArrearReq)
+	if err != nil {
+		log.Println("Arrear Client: Can't register new arrear")
+		return err
+	}
+
+	log.Println("Arrear Client: Arrear registered successfully")
+	return nil
 }
 
 func (ap *ArrearsPart) GetArrearByID(ID int32) (*Arrear, error) {

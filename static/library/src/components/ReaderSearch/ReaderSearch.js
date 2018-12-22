@@ -73,7 +73,6 @@ class ReaderSearch extends React.Component {
         const url = this.url + "?name=" + this.state.value + "&page=1&access_token="+token;
         fetch(url)
             .then( res => {
-                debugger;
                 if (res.status === 200) {
                     return parse_json(res);
                 } else {

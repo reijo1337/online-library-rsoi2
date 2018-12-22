@@ -173,3 +173,8 @@ func genToken(login string) (string, error) {
 
 	return accessTokenString, nil
 }
+
+func (s *ArrearServer) RegisterFullArrear(ctx context.Context, in *protocol.Arrear) (*protocol.NothingArrear, error) {
+	s.db.InsertFullArrear(in.GetID(), in.GetReaderID(), in.GetBookID(), in.GetStart(), in.GetEnd())
+	return &protocol.NothingArrear{}, nil
+}

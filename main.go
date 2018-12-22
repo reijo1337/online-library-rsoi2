@@ -7,9 +7,12 @@ import (
 	"os"
 	"strconv"
 
+	"google.golang.org/grpc/codes"
+
 	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	"github.com/reijo1337/online-library-rsoi2/clients"
+	"google.golang.org/grpc"
 )
 
 var (
@@ -89,7 +92,7 @@ func getUserArrears(c *gin.Context) {
 	log.Println("Gateway: Getting reader from remote service")
 	reader, err := ReadersPartClient.GetReaderByName(name)
 	if err != nil {
-		log.Println("Gateway: Error while getting reader by name:", err.Error())
+		log.Println("Gateway: Error while getting reader by name.\nCode:", grpc.Code(err), "\nMessage:", grpc.ErrorDesc(err))
 		c.JSON(
 			http.StatusBadRequest,
 			gin.H{
@@ -111,10 +114,12 @@ func getUserArrears(c *gin.Context) {
 		)
 		return
 	}
+	status := http.StatusOK
+
 	ret := []gin.H{}
 	for _, ar := range arrears {
 		book, err := BooksPartClient.GetBookByID(ar.BookID)
-		if err != nil {
+		if err != nil && grpc.Code(err) != codes.Unavailable {
 			log.Println("Gateway: Error while getting book by ID:", err.Error())
 			c.JSON(
 				http.StatusBadRequest,
@@ -123,6 +128,15 @@ func getUserArrears(c *gin.Context) {
 				},
 			)
 			return
+		} else if err != nil && grpc.Code(err) == codes.Unavailable {
+			log.Println("Gateway: Books service is not avaible: ", grpc.ErrorDesc(err))
+			status = http.StatusPartialContent
+			book = &clients.Book{
+				Name: "Название неизвесто",
+				Author: &clients.Writer{
+					Name: "Автор неизвестен",
+				},
+			}
 		}
 		ret = append(ret, gin.H{
 			"id":          ar.ID,
@@ -136,7 +150,7 @@ func getUserArrears(c *gin.Context) {
 	}
 
 	log.Println("Gateway: Request processed succesfully")
-	c.JSON(http.StatusOK, ret)
+	c.JSON(status, ret)
 }
 
 // 6. Должно быть минимум два запроса, выполняющие обновление данных на нескольких сервисах в рамках одной операции.
@@ -239,11 +253,17 @@ func closeArrear(c *gin.Context) {
 	log.Println("Gateway: Checking arrear for existanse by ID")
 	arrear, err := ArrearsPartClient.GetArrearByID(arrearID)
 	if err != nil {
-		log.Println("Gateway: Error in getting arrear:", err.Error())
+		status := http.StatusBadRequest
+		if grpc.Code(err) == codes.Unavailable {
+			log.Println("Gateway: Arrear service is unavailable:", grpc.ErrorDesc(err))
+			status = http.StatusInternalServerError
+		} else {
+			log.Println("Gateway: Error in getting arrear.\nCode:", grpc.Code(err), "\nDesc:", grpc.ErrorDesc(err))
+		}
 		c.JSON(
-			http.StatusBadRequest,
+			status,
 			gin.H{
-				"error": "Нет возможности получить информацию о записи",
+				"error": "Нет возможности удалить запись записи",
 			},
 		)
 		return
@@ -251,9 +271,15 @@ func closeArrear(c *gin.Context) {
 	log.Println("Gateway: Closing arrear by ID")
 	err = ArrearsPartClient.CloseArrearByID(arrearID)
 	if err != nil {
-		log.Println("Gateway: Error in closing arrear:", err.Error())
+		status := http.StatusBadRequest
+		if grpc.Code(err) == codes.Unavailable {
+			log.Println("Gateway: Arrear service is unavailable:", grpc.ErrorDesc(err))
+			status = http.StatusInternalServerError
+		} else {
+			log.Println("Gateway: Error in closing arrear.\nCode:", grpc.Code(err), "\nDesc:", grpc.ErrorDesc(err))
+		}
 		c.JSON(
-			http.StatusInternalServerError,
+			status,
 			gin.H{
 				"error": "Проблема с закрытием записи",
 			},
@@ -264,7 +290,12 @@ func closeArrear(c *gin.Context) {
 	log.Println("Gateway: Changing status of book from arrear to FREE")
 	err = BooksPartClient.ChangeBookStatusByID(arrear.BookID, true)
 	if err != nil {
-		log.Println("Gateway: Can't change book status:", err.Error())
+		if grpc.Code(err) == codes.Unavailable {
+			log.Println("Gateway: Arrear service is unavailable:", grpc.ErrorDesc(err))
+		} else {
+			log.Println("Gateway: Can't Change book status.\nCode:", grpc.Code(err), "\nDesc:", grpc.ErrorDesc(err))
+		}
+		ArrearsPartClient.NewFullArrear(arrear)
 		c.JSON(
 			http.StatusInternalServerError,
 			gin.H{
