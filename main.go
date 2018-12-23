@@ -12,6 +12,7 @@ import (
 	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	"github.com/reijo1337/online-library-rsoi2/clients"
+	"github.com/reijo1337/online-library-rsoi2/sheduler"
 	"google.golang.org/grpc"
 )
 
@@ -20,6 +21,7 @@ var (
 	ReadersPartClient clients.ReadersPartInterface
 	ArrearsPartClient clients.ArrearsPartInterface
 	AuthPartClient    clients.AuthPartInterface
+	TaskQueue         chan<- *sheduler.Task
 )
 
 func init() {
@@ -47,6 +49,8 @@ func init() {
 		log.Println("Initing arrears part error")
 		panic(err)
 	}
+
+	TaskQueue = sheduler.CreateSheduler()
 
 	BooksPartClient = bpc
 	ReadersPartClient = rpc
@@ -169,11 +173,12 @@ func newArear(c *gin.Context) {
 		)
 		return
 	}
+
 	log.Println("Gateway: Reader name:", req.ReaderName, ", Book ID:", req.BookID)
 	log.Println("Gateway: Getting book by ID")
 	book, err := BooksPartClient.GetBookByID(req.BookID)
 	if err != nil {
-		log.Println("Gateway: Can't recieve book:", err.Error())
+		log.Println("Gateway: Can't recieve book.\nCode:", grpc.Code(err), "\nMessage:", grpc.ErrorDesc(err))
 		c.JSON(
 			http.StatusBadRequest,
 			gin.H{
@@ -182,6 +187,7 @@ func newArear(c *gin.Context) {
 		)
 		return
 	}
+
 	log.Println("Gateway: Getting reader by name")
 	reader, err := ReadersPartClient.GetReaderByName(req.ReaderName)
 	if err != nil {
@@ -197,7 +203,11 @@ func newArear(c *gin.Context) {
 	log.Println("Gateway: Changing arrear book status to NOT FREE")
 	err = BooksPartClient.ChangeBookStatusByID(req.BookID, false)
 	if err != nil {
-		log.Println("Gateway: Can't change book status:", err.Error())
+		if grpc.Code(err) == codes.Unavailable {
+			log.Println("Gateway: Books Service is unavailable:", grpc.ErrorDesc(err))
+		} else {
+			log.Println("Gateway: Can't change book status:", err.Error())
+		}
 		c.JSON(
 			http.StatusInternalServerError,
 			gin.H{
@@ -209,7 +219,12 @@ func newArear(c *gin.Context) {
 	log.Println("Gateway: Making new arrear")
 	arrear, err := ArrearsPartClient.NewArrear(reader.ID, req.BookID)
 	if err != nil {
-		log.Println("Gateway: Can't register new arrear:", err.Error())
+		if grpc.Code(err) == codes.Unavailable {
+			log.Println("Gateway: Arrears service is unavailable:", grpc.ErrorDesc(err))
+			BooksPartClient.ChangeBookStatusByID(req.BookID, true)
+		} else {
+			log.Println("Gateway: Can't register new arrear:", err.Error())
+		}
 		c.JSON(
 			http.StatusInternalServerError,
 			gin.H{
@@ -274,7 +289,8 @@ func closeArrear(c *gin.Context) {
 		status := http.StatusBadRequest
 		if grpc.Code(err) == codes.Unavailable {
 			log.Println("Gateway: Arrear service is unavailable:", grpc.ErrorDesc(err))
-			status = http.StatusInternalServerError
+			task, _ := sheduler.CreateTask(ArrearsPartClient.CloseArrearByID, arrearID)
+			TaskQueue <- task
 		} else {
 			log.Println("Gateway: Error in closing arrear.\nCode:", grpc.Code(err), "\nDesc:", grpc.ErrorDesc(err))
 		}
@@ -292,17 +308,18 @@ func closeArrear(c *gin.Context) {
 	if err != nil {
 		if grpc.Code(err) == codes.Unavailable {
 			log.Println("Gateway: Arrear service is unavailable:", grpc.ErrorDesc(err))
+			task, _ := sheduler.CreateTask(BooksPartClient.ChangeBookStatusByID, arrear.BookID, true)
+			TaskQueue <- task
 		} else {
 			log.Println("Gateway: Can't Change book status.\nCode:", grpc.Code(err), "\nDesc:", grpc.ErrorDesc(err))
+			c.JSON(
+				http.StatusInternalServerError,
+				gin.H{
+					"error": "Проблема с закрытием записи",
+				},
+			)
+			return
 		}
-		ArrearsPartClient.NewFullArrear(arrear)
-		c.JSON(
-			http.StatusInternalServerError,
-			gin.H{
-				"error": "Проблема с закрытием записи",
-			},
-		)
-		return
 	}
 	log.Println("Gateway: Request processed successfully")
 	c.JSON(
