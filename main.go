@@ -109,22 +109,11 @@ func getUserArrears(c *gin.Context) {
 	log.Println("Gateway: Getting arrears from remote service", reader.ID, pageInt, sizeInt)
 	arrears, err := ArrearsPartClient.GetArrearsPaging(reader.ID, pageInt, sizeInt)
 	if err != nil {
-		log.Println("Gateway: Error while getting arrears:", err.Error())
-		c.JSON(
-			http.StatusBadRequest,
-			gin.H{
-				"error": "Нет возможности получить информацию про книги, записанные на " + name,
-			},
-		)
-		return
-	}
-	status := http.StatusOK
-
-	ret := []gin.H{}
-	for _, ar := range arrears {
-		book, err := BooksPartClient.GetBookByID(ar.BookID)
-		if err != nil && grpc.Code(err) != codes.Unavailable {
-			log.Println("Gateway: Error while getting book by ID:", err.Error())
+		if grpc.Code(err) == codes.Unavailable {
+			log.Println("Gateway: Arrears service is unavailable:", grpc.ErrorDesc(err))
+			arrears = make([]clients.Arrear, 0)
+		} else {
+			log.Println("Gateway: Error while getting arrears.\nCode:", grpc.Code(err), "\nDesc:", grpc.ErrorDesc(err))
 			c.JSON(
 				http.StatusBadRequest,
 				gin.H{
@@ -132,14 +121,31 @@ func getUserArrears(c *gin.Context) {
 				},
 			)
 			return
-		} else if err != nil && grpc.Code(err) == codes.Unavailable {
-			log.Println("Gateway: Books service is not avaible: ", grpc.ErrorDesc(err))
-			status = http.StatusPartialContent
-			book = &clients.Book{
-				Name: "Название неизвесто",
-				Author: &clients.Writer{
-					Name: "Автор неизвестен",
-				},
+		}
+	}
+	status := http.StatusOK
+
+	ret := []gin.H{}
+	for _, ar := range arrears {
+		book, err := BooksPartClient.GetBookByID(ar.BookID)
+		if err != nil {
+			if grpc.Code(err) == codes.Unavailable {
+				log.Println("Gateway: Books service is not avaible: ", grpc.ErrorDesc(err))
+				book = &clients.Book{
+					Name: "Название неизвесто",
+					Author: &clients.Writer{
+						Name: "Автор неизвестен",
+					},
+				}
+			} else {
+				log.Println("Gateway: Error while getting book by ID:", err.Error())
+				c.JSON(
+					http.StatusBadRequest,
+					gin.H{
+						"error": "Нет возможности получить информацию про книги, записанные на " + name,
+					},
+				)
+				return
 			}
 		}
 		ret = append(ret, gin.H{
