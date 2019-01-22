@@ -10,9 +10,9 @@ import (
 )
 
 const (
-	USER     = "rsoi"
+	USER     = "postgres"
 	PASSWORD = "password"
-	DB_NAME  = "auth"
+	DB_NAME  = "postgres"
 )
 
 type Database struct {
@@ -21,7 +21,7 @@ type Database struct {
 
 func SetUpDatabase() (*Database, error) {
 	log.Println("DB: Connecting to", DB_NAME, "database")
-	db, err := sql.Open("postgres", fmt.Sprintf("user=%s password=%s dbname=%s sslmode=disable", USER, PASSWORD, DB_NAME))
+	db, err := sql.Open("postgres", fmt.Sprintf("user=%s password=%s dbname=%s sslmode=disable host=db_auth", USER, PASSWORD, DB_NAME))
 	if err != nil {
 		return nil, err
 	}

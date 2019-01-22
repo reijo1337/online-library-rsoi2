@@ -17,7 +17,8 @@ func main() {
 
 	serv, err := Server()
 	if err != nil {
-		log.Println("can't  start server", err)
+		log.Panic("can't  start server", err)
+		return
 	}
 
 	server := grpc.NewServer()

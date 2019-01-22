@@ -1,0 +1,17 @@
+version: "2"
+
+services:
+  db:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: password
+  arrear_service:
+    image: tantsevov/arrear-service
+    restart: always
+  books_service:
+    image: tantsevov/books-service
+    restart: always
+  books_service:
+    image: tantsevov/readers-service
+    restart: always
