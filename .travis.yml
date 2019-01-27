@@ -29,5 +29,6 @@ script:
   - cd arrears-service
   - go build
   - cd ..
+  - cd gateway
   - go build
   - go test

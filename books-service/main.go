@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net"
+	"time"
 
 	"github.com/reijo1337/online-library-rsoi2/books-service/protocol"
 
@@ -10,14 +11,31 @@ import (
 )
 
 func main() {
-	lis, err := net.Listen("tcp", ":8081")
-	if err != nil {
-		log.Panic("can't listet port", err)
+	var (
+		lis  net.Listener
+		err  error
+		serv *BooksServer
+	)
+	for {
+		lis, err = net.Listen("tcp", ":8081")
+		if err != nil {
+			log.Println("can't listet port", err)
+			log.Println("Retry after 5 sec")
+			time.Sleep(5 * time.Second)
+		} else {
+			break
+		}
 	}
 
-	serv, err := Server()
-	if err != nil {
-		log.Panic("can't  start server", err)
+	for {
+		serv, err = Server()
+		if err != nil {
+			log.Println("can't  start server", err)
+			log.Println("Retry after 5 sec")
+			time.Sleep(5 * time.Second)
+		} else {
+			break
+		}
 	}
 
 	server := grpc.NewServer()

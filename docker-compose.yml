@@ -1,17 +1,22 @@
-version: "2"
+version: "3.1"
 
 services:
   db:
     image: postgres
-    restart: always
     environment:
       POSTGRES_PASSWORD: password
   arrear_service:
     image: tantsevov/arrear-service
-    restart: always
   books_service:
     image: tantsevov/books-service
-    restart: always
-  books_service:
+  readers_service:
     image: tantsevov/readers-service
-    restart: always
+  auth_service:
+    image: tantsevov/auth-service
+  gateway:
+    image: tantsevov/gateway
+    environment:
+      AUTH: auth_service:8084
+      ARREARSADDR: arrear_service:8083
+      BOOKSADDR: books_service:8081
+      READERSADDR: readers_service:8082

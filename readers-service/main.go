@@ -3,20 +3,38 @@ package main
 import (
 	"log"
 	"net"
+	"time"
 
 	"github.com/reijo1337/online-library-rsoi2/readers-service/protocol"
 	"google.golang.org/grpc"
 )
 
 func main() {
-	lis, err := net.Listen("tcp", ":8082")
-	if err != nil {
-		log.Panic("can't listet port", err)
+	var (
+		lis  net.Listener
+		err  error
+		serv *ReadersServer
+	)
+	for {
+		lis, err = net.Listen("tcp", ":8082")
+		if err != nil {
+			log.Println("can't listet port", err)
+			log.Println("Retry after 5 sec")
+			time.Sleep(5 * time.Second)
+		} else {
+			break
+		}
 	}
 
-	serv, err := Server()
-	if err != nil {
-		log.Panic("can't  start server", err)
+	for {
+		serv, err = Server()
+		if err != nil {
+			log.Println("can't  start server", err)
+			log.Println("Retry after 5 sec")
+			time.Sleep(5 * time.Second)
+		} else {
+			break
+		}
 	}
 
 	server := grpc.NewServer()

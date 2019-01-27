@@ -101,10 +101,21 @@ func refreshToken(c *gin.Context) {
 }
 
 func main() {
-	db, err := SetUpDatabase()
-	if err != nil {
-		log.Panic(err)
+	var (
+		db  *Database
+		err error
+	)
+	for {
+		db, err = SetUpDatabase()
+		if err != nil {
+			log.Println(err)
+			log.Println("Retry after 5 sec")
+			time.Sleep(5 * time.Second)
+		} else {
+			break
+		}
 	}
+
 	DB = db
 	r := gin.Default()
 	r.POST("/", getToken)
